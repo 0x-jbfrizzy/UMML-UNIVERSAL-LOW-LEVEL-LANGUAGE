@@ -1,0 +1,31 @@
+; UMML Script: Multi-Domain Chained Side-Channel
+; Demonstrates how NoC contention can amplify standard cache timing leaks.
+; R1 is hardwired to 1.
+
+; 1. Setup: R0 = 16 (Target address), R2 = 1 (Index)
+MOV R0, R1
+ADD R0, R0
+ADD R0, R0
+ADD R0, R0
+ADD R0, R0
+MOV R2, R1
+
+; 2. PHASE 1: NoC Backpressure
+; Block Virtual Channel 2 to induce pipeline stalls and widen timing windows.
+VC_BLOCK 2          
+
+; 3. PHASE 2: Speculative Execution Gadget
+SAVE_REG            
+FORCE_MISPRED       
+LOAD R3, R0         ; Transient load poisons the cache line
+ROLLBACK            ; Architectural state reverts; microarchitectural state remains
+
+; 4. PHASE 3: Coherence Latency Measurement
+; Measure the time to access the address. The NoC backpressure amplifies
+; the standard RFO/cache miss penalty, making the side-channel signal clearer.
+READ_CYCLES R4      
+LOAD R5, R0         ; Triggers cache coherence traffic + NoC stall
+READ_CYCLES R6      
+SUB R6, R4          ; Calculate the amplified timing delta
+
+HALT
