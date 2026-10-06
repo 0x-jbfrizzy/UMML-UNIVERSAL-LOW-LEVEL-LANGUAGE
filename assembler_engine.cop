@@ -1,0 +1,58 @@
+; UMML Self-Hosted Assembler Engine (Fixed)
+; Reads raw numbers from Data Memory, packs them, writes to Inst Memory at address 32.
+
+; Setup Pointers
+MOV R2, R1      ; R2 = 1
+SUB R2, R1      ; R2 = 0 (Data Pointer)
+MOV R3, R1      ; R3 = 1
+ADD R3, R3      ; 2
+ADD R3, R3      ; 4
+ADD R3, R3      ; 8
+ADD R3, R3      ; 16
+ADD R3, R3      ; 32 (Inst Pointer - Safely away from the engine!)
+
+; --- COMPILE INSTRUCTION 1 ---
+LOAD R4, R2     ; R4 = Data[R2] (Opcode)
+SHLI R4, 12     ; Opcode << 12
+ADD R2, R1      ; R2 = 1
+LOAD R5, R2     ; R5 = Data[R2] (Rd)
+SHLI R5, 8      ; Rd << 8
+OR R4, R5       ; Combine
+ADD R2, R1      ; R2 = 2
+LOAD R6, R2     ; R6 = Data[R2] (Rs)
+SHLI R6, 4      ; Rs << 4
+OR R4, R6       ; Final Pack
+STORE_INST R3, R4 ; Write to Inst[R3]
+ADD R3, R1      ; R3 = 33
+ADD R2, R1      ; R2 = 3 (Next Opcode)
+
+; --- COMPILE INSTRUCTION 2 ---
+LOAD R4, R2
+SHLI R4, 12
+ADD R2, R1
+LOAD R5, R2
+SHLI R5, 8
+OR R4, R5
+ADD R2, R1
+LOAD R6, R2
+SHLI R6, 4
+OR R4, R6
+STORE_INST R3, R4
+ADD R3, R1      ; R3 = 34
+ADD R2, R1      ; R2 = 6
+
+; --- COMPILE INSTRUCTION 3 (HALT) ---
+LOAD R4, R2
+SHLI R4, 12
+ADD R2, R1
+LOAD R5, R2
+SHLI R5, 8
+OR R4, R5
+ADD R2, R1
+LOAD R6, R2
+SHLI R6, 4
+OR R4, R6
+STORE_INST R3, R4
+
+; Jump to the compiled code and run it!
+JMP 32
