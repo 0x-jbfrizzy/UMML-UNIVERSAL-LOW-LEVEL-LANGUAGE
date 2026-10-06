@@ -93,10 +93,6 @@ Contributing
 This is an active, evolving project. If you want to add support for new instructions, refine the DRAM leakage formulas, or model a different cache coherence protocol, open a PR.
 Built for researchers, by researchers
 
-
-
-bkw this is good I need disclaimer for research purpose
-
 Legal & Ethical Disclaimer
 This project is developed and provided strictly for educational, defensive, and academic research purposes. The microarchitectural models and side-channel techniques demonstrated here are intended to help the security community understand, detect, and mitigate hardware vulnerabilities before they can be exploited in the wild.
 The author(s) assume no liability for any misuse of this software or the concepts contained within. Any attempt to use UMML or its underlying principles to compromise systems, extract unauthorized data, or cause harm without explicit, documented authorization is strictly prohibited and may violate local and international computer fraud laws.
