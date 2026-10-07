@@ -1,0 +1,21 @@
+; UMML Spatial Graph: (5 + 3) + 2 = 10
+; Format: NODE <x> <y> <OP> <IN_A> <IN_B> <OUT>
+
+; Route 5 from West to ALU1
+NODE 1 2 PASS WEST EAST
+
+; Route 3 from North to ALU1
+NODE 2 4 PASS NORTH SOUTH
+NODE 2 3 PASS NORTH SOUTH
+
+; ALU 1: Add 5 and 3, output East
+NODE 2 2 ADD WEST NORTH EAST
+
+; Route 2 from South to ALU2
+NODE 3 1 PASS SOUTH NORTH
+
+; ALU 2: Add 8 and 2, output East
+NODE 3 2 ADD WEST SOUTH EAST
+
+; Route Result to East Boundary
+NODE 4 2 PASS WEST EAST
