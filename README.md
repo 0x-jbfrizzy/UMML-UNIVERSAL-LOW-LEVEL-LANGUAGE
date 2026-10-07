@@ -2,62 +2,69 @@
 Talking directly to the CPU no Abstractions
 _________________________________________
 
+Talking directly to the machine. Minimizing abstraction.
 
+UMML is a hardware-near programming, assembly, and microarchitectural modeling language for studying how computer hardware actually behaves.
 
-UMML (Universal Microarchitectural Modeling Language)
+Most hardware security simulators hide the details that matter. They may simply report a cache miss or a bit flip without exposing the timing, state changes, contention, and interactions underneath.
 
-Most hardware security simulators abstract away the physics. They give you a boolean cache_miss = true or a simulated bit_flip. They hide the actual microarchitectural behavior that makes zero-days possible in the first place.
+UMML is designed to model those lower-level behaviors directly.
 
-If you want to find the next generation of hardware vulnerabilities, you can't rely on abstractions. You have to model the physics.
+It combines a low-level programming language with microarchitectural primitives that can represent things such as cache coherence, NoC traffic, speculation, timing, and resource contention.
 
-UMML is a zero-abstraction hardware description and assembly language built to model the physical reality of modern SoCs. It runs on a custom 16-bit ISA. No OS abstractions. No compiler optimizations hiding the truth. 
+## Architecture
 
-If it happens in silicon, you can model it here.
+UMML currently has three main layers:
 
-The Core Principles
+1. UMML Source — defines the experiment, access pattern, timing measurement, or spatial dataflow graph.
+2. Copper ISA — a custom 16-bit instruction set used by the Copper processor.
+3. Copper Microarchitecture — a synthesizable Verilog implementation that models registers, caches, NoC resources, latency, state, and contention.
 
-UMML is built on three rules of silicon:
+Unlike conventional assembly, UMML can describe behavior below the ISA level.
 
-1. The Propagation Law: No state change is instantaneous. Every instruction has a physical latency defined by the module it targets.
-2. The State Decoupling Law: Architectural state (registers) and microarchitectural state (cache, branch predictors, NoC buffers) are strictly separated. A rollback only affects the former.
-3. The Contention Law: Resources are finite. Backpressure is real, and it leaks timing information.
+## Core Principles
 
-Microarchitectural Domains
+**Propagation**
+State changes take time. Operations have latency determined by the hardware resources involved.
 
-UMML isn't just a CPU simulator. It is a multi-domain physics engine for hardware security research:
+**State Decoupling**
+Architectural state and microarchitectural state are separate. Rolling back architectural state does not necessarily remove changes that occurred inside the microarchitecture.
 
-- Cache Coherence: Model MOESI state transitions, Request For Ownership (RFO) latency, and directory protocol manipulation.
-- Network-on-Chip (NoC): Model virtual channel allocation, crossbar arbitration, and backpressure-induced timing leaks.
-- DRAM Analog Physics: Track actual capacitor charge levels (0-100%). Model temperature-dependent leakage, refresh bypass, and Aggressor/Victim electromagnetic disturbance.
-- Speculative Execution: Model Branch Target Buffers (BTB), forced mispredictions, and the exact state decoupling that makes transient execution leaks possible.
-- Power and Thermal: Track dynamic power draw and thermal throttling thresholds to model heat-based side-channels.
-- Multi-Domain Chaining: Chain NoC backpressure with speculative gadgets to actively widen execution windows and amplify timing deltas.
+**Contention**
+Hardware resources are finite. When multiple operations compete for the same resources, backpressure and timing effects appear.
 
-Quick Start
+## Microarchitectural Domains
 
-UMML is designed to be a seamless, one-command toolchain. 
+UMML can model multiple hardware domains, including:
 
-Prerequisites
-You need Python 3 and Icarus Verilog installed on your system.
-Ubuntu/Debian: sudo apt-get install iverilog
-macOS: brew install icarus-verilog
-Windows: Download the installer from bleyer.org/icarus
+- Cache coherence and MOESI state transitions
+- RFO traffic and coherence latency
+- NoC routing, virtual channels, arbitration, and backpressure
+- DRAM charge and leakage behavior
+- Speculative execution and branch prediction
+- Microarchitectural state that survives architectural rollback
+- Interactions between multiple hardware domains
 
-Running a Script
-You don't need to manually compile or paste hex codes. Just point the runner at your .cop file:
+The goal is to study vulnerabilities that emerge from the interaction between these components rather than looking at each component in isolation.
 
-python3 umml.py chained_hunt.cop
+## CPU Toolchain
 
-The script will automatically assemble the file into 16-bit machine code, compile the Verilog hardware model, and execute the simulation to print the microarchitectural state.
+UMML's initial toolchain does not require Python, C, or another host compiler.
 
-Example: The Chained Side-Channel
+It uses POSIX shell, awk, and Icarus Verilog.
 
-This script actively manipulates the NoC to make a standard cache timing leak more reliable by amplifying the timing delta.
+```bash
+./asm.sh chained_hunt.cop program.hex
+./gen_tb.sh program.hex testbench.sv
+iverilog -o umml_sim design.sv testbench.sv
+vvp umml_sim
+```
+
+## Example
+
+A UMML research program can combine NoC contention, speculative execution, and timing measurement:
 
 ```assembly
-; chained_hunt.cop
-
-; 1. Setup: R0 = 16 (Target address), R2 = 1 (Index)
 MOV R0, R1
 ADD R0, R0
 ADD R0, R0
@@ -65,67 +72,89 @@ ADD R0, R0
 ADD R0, R0
 MOV R2, R1
 
-; 2. PHASE 1: NoC Backpressure
-; Block Virtual Channel 2 to induce pipeline stalls and widen timing windows.
-VC_BLOCK 2          
+VC_BLOCK 2
 
-; 3. PHASE 2: Speculative Execution Gadget
-SAVE_REG            
-FORCE_MISPRED       
-LOAD R3, R0         ; Transient load poisons the cache line
-ROLLBACK            ; Architectural state reverts; microarchitectural state remains
+SAVE_REG
+FORCE_MISPRED
+LOAD R3, R0
+ROLLBACK
 
-; 4. PHASE 3: Coherence Latency Measurement
-; Measure the time to access the address. The NoC backpressure amplifies
-; the standard RFO/cache miss penalty, making the side-channel signal clearer.
-READ_CYCLES R4      
-LOAD R5, R0         ; Triggers cache coherence traffic + NoC stall
-READ_CYCLES R6      
-SUB R6, R4          ; Calculate the amplified timing delta
+READ_CYCLES R4
+LOAD R5, R0
+READ_CYCLES R6
+SUB R6, R4
 
 HALT
 ```
 
-The Result:
-Instead of a noisy, fragile 15-cycle cache miss penalty, the NoC backpressure actively stalls the pipeline during the RFO, resulting in a clean, highly detectable 41-cycle latency delta. The software sees a clean rollback (R3 = 0), but the silicon remembers.
+In the simulated experiment, NoC backpressure increased the observed latency from the normal noisy cache behavior to an approximately 41-cycle delta.
 
-Stage 3: Self-Hosting Architecture
+The important part is not the number itself. It is that the model exposes the interaction between different microarchitectural resources.
 
-Most languages rely on a host compiler (C, Rust, Python) to build their toolchain. UMML does not. 
+## Stage 3: Native Code Generation
 
-We achieved full self-hosting by building a bitwise packing engine directly into the 16-bit ISA. The CPU reads raw numerical source code from Data Memory, performs the bitwise mathematics to pack the opcodes and registers, writes the resulting machine code into its own Instruction Memory, and physically jumps to that address to execute the newly compiled program.
+UMML also includes a native code-generation stage.
 
-This is the exact bootstrap principle used to build the first C compiler and Unix. Python is dead. The silicon builds itself.
+The Copper processor can read numerical representations of source instructions from its data memory, perform the required bitwise operations, construct machine-code words, write them into instruction memory, and execute them.
 
-Project Structure
+This demonstrates a basic bootstrap process where the target architecture participates in building its own executable code.
 
-umml.py - The master runner script that handles assembly, Verilog compilation, and simulation execution in a single command.
-copper_asm.py - The custom 16-bit assembler that parses .cop files and outputs Verilog-compatible hex.
-design.sv - The synthesizable Verilog core containing physical models for registers, caches, NoC routers, and DRAM arrays.
-testbench.sv - The simulation harness that loads the hex output and prints the microarchitectural state.
-bootstrap_tb.sv / assembler_engine.cop - The self-hosting compiler source and testbench proving the singularity.
-.cop files - Example research scripts demonstrating specific vulnerability classes.
+The system can also construct 32-bit instruction payloads, including valid RISC-V encodings, with future work targeting ARM64 and x86-64 payload generation.
 
-Why This Matters
+## Stage 5: Native Spatial Compiler
 
-Patching Spectre doesn't fix NoC backpressure. Fixing NoC arbitration doesn't stop DRAM charge leakage. The next generation of hardware vulnerabilities won't live in a single domain; they will live in the intersections between them. 
+Stage 5 introduces a different execution model.
 
-UMML gives researchers the sandbox to find those intersections.
+Instead of translating a program into instructions for a conventional CPU, UMML can describe computation as a spatial dataflow graph.
 
-Contributing
+The compiler converts the graph into a hardware configuration bitstream. The hardware fabric uses that configuration to establish the required processing elements and routing paths.
 
-This is an active, evolving project. If you want to add support for new instructions, refine the DRAM leakage formulas, or model a different cache coherence protocol, open a PR. 
+For example:
 
-Built for researchers, by researchers.
+```text
+NODE 2 2 ADD WEST NORTH EAST
+```
 
-Legal and Ethical Disclaimer
+can be compiled with:
 
-This project is developed and provided strictly for educational, defensive, and academic research purposes. The microarchitectural models and side-channel techniques demonstrated here are intended to help the security community understand, detect, and mitigate hardware vulnerabilities before they can be exploited in the wild.
+```bash
+./spatial_asm.sh graph.umml config.hex
+./gen_spatial_tb.sh
+iverilog -o umml_sim design.sv testbench.sv
+vvp umml_sim
+```
 
-The author assumes no liability for any misuse of this software or the concepts contained within. Any attempt to use UMML or its underlying principles to compromise systems, extract unauthorized data, or cause harm without explicit, documented authorization is strictly prohibited and may violate local and international computer fraud laws. 
+The resulting computation happens through spatial dataflow. Operands move through the configured fabric, meet at the appropriate ALU, and the result propagates through the fabric.
 
-Always conduct hardware security research within the bounds of responsible disclosure and strictly authorized environments. 
+There is no requirement for the computation to pass through a conventional RISC-V, ARM, or x86 instruction stream.
 
- 
+## Project Structure
 
-  
+- `asm.sh` and `gen_tb.sh` form the original Copper toolchain.
+- `spatial_asm.sh` and `gen_spatial_tb.sh` handle the spatial compiler.
+- `design.sv` contains the synthesizable hardware implementation, including the Copper processor and spatial fabric.
+- `bootstrap_tb.sv` and `assembler_engine.cop` demonstrate native code generation.
+- `graph.umml` contains spatial programs.
+- `*.cop` files contain microarchitectural research programs.
+
+## Why UMML Exists
+
+Hardware vulnerabilities often appear at the boundaries between different components.
+
+A cache-coherence problem can interact with NoC contention. NoC behavior can affect timing. Speculation can leave microarchitectural state behind. Memory behavior can introduce another source of timing variation.
+
+UMML is intended to give researchers a low-level environment for exploring those interactions directly.
+
+## Contributing
+
+UMML is an evolving open-source project.
+
+Contributions can include new instructions, microarchitectural models, coherence protocols, memory models, spatial operations, and hardware-security experiments.
+
+## Legal and Ethical Disclaimer
+
+UMML is intended for educational, defensive, and academic research.
+
+Use it only on hardware and systems you are authorized to study. Do not use it to access, extract data from, or compromise systems without permission.
+
+Follow responsible disclosure practices when researching real hardware vulnerabilities.
