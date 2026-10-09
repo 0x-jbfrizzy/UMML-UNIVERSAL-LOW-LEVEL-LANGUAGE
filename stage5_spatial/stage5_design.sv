@@ -140,6 +140,20 @@ module dual_rail_encoder_32 (
             end
         end
     end
+
+    // ==========================================
+    // FORMAL VERIFICATION: WDDL INVARIANT ASSERTION
+    // ==========================================
+    // Property: In a valid Dual-Rail encoding, the true rail and false rail 
+    // must NEVER be high at the same time for the same bit.
+    generate
+        genvar j;
+        for (j = 0; j < 32; j = j + 1) begin : wddl_assertions
+            assert property (@(posedge clk) disable iff (rst) 
+                data_ready |-> !(dual_rail_data[j] && dual_rail_data[j + 32])
+            ) else $error("WDDL VIOLATION: True and False rails are both high at bit %0d!", j);
+        end
+    endgenerate
 endmodule
 
 module constant_time_node (
