@@ -2,6 +2,9 @@
 
 # UMML: Universal Low-Level Language Talking Directly to the Machine. Minimizing Abstraction.
 ![UMML Stage 5 CI](https://github.com/0x-jbfrizzy/UMML-UNIVERSAL-LOW-LEVEL-LANGUAGE/actions/workflows/iverilog-ci.yml/badge.svg)
+
+📄[Read the Official UMML Technical Whitepaper](https://docs.google.com/document/d/1hXlei_voO40i-5OnjcGMmUQP1mBNZg8GKK7_POBxTQQ/preview)
+
 UMML is a hardware-near programming, assembly, and microarchitectural modeling language for studying how computer hardware actually behaves.
 
 Most hardware security simulators hide the details that matter. They may simply report a cache miss or a bit flip without exposing the timing, state changes, contention, and interactions underneath. UMML is designed to model those lower-level behaviors directly. It combines a low-level programming language with microarchitectural primitives that can represent things such as cache coherence, NoC traffic, speculation, timing, and resource contention.
@@ -121,7 +124,7 @@ UMML is open-source and free to use. However, I am currently open to:
 - **Consulting contracts** for RTL side-channel analysis, DPA modeling, or secure hardware design.
 
 If your team is building secure silicon and needs expertise in constant-time execution, spatial dataflow, or microarchitectural modeling, let's talk.
-📧 **Email: banjojesuloba@gmail.com
-🔗 LinkedIn: https://www.linkedin.com/in/banjo-jesuloba-8a9916421?utm_source=share_via&utm_content=profile&utm_medium=member_android
+Email: banjojesuloba@gmail.com
+LinkedIn: https://www.linkedin.com/in/banjo-jesuloba-8a9916421?utm_source=share_via&utm_content=profile&utm_medium=member_android
 ____________________________________
 Created and maintained by 0x-jbfrizzy (Jesuloba Banjo).
