@@ -1,0 +1,28 @@
+name: UMML Stage 5 CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install Icarus Verilog
+      run: sudo apt-get update && sudo apt-get install -y iverilog
+
+    - name: Compile Stage 5 Design
+      run: |
+        cd stage5_spatial
+        iverilog -g2012 -o umml_stage5_sim stage5_design.sv stage5_tb.sv
+
+    - name: Run Stage 5 Simulation
+      run: |
+        cd stage5_spatial
+        vvp umml_stage5_sim
