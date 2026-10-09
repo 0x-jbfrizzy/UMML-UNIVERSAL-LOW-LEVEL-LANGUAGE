@@ -1,20 +1,20 @@
 
 
-# UMML: Universal Low-Level Language### Talking Directly to the Machine. Minimizing Abstraction.
+# UMML: Universal Low-Level Language Talking Directly to the Machine. Minimizing Abstraction.
 UMML is a hardware-near programming, assembly, and microarchitectural modeling language for studying how computer hardware actually behaves.
 
 Most hardware security simulators hide the details that matter. They may simply report a cache miss or a bit flip without exposing the timing, state changes, contention, and interactions underneath. UMML is designed to model those lower-level behaviors directly. It combines a low-level programming language with microarchitectural primitives that can represent things such as cache coherence, NoC traffic, speculation, timing, and resource contention.
----## ⚡ The Paradigm Shift: Beyond Von Neumann
-Traditional computing is trapped by the **Von Neumann Bottleneck**: a rigid cycle of fetching instructions from memory, decoding them through an ISA (Instruction Set Architecture), and executing them sequentially over a shared bus. This abstraction layer hides the physical reality of the silicon.
+ The Paradigm Shift: Beyond Von Neumann
+Traditional computing is trapped by the "Von Neumann Bottleneck": a rigid cycle of fetching instructions from memory, decoding them through an ISA (Instruction Set Architecture), and executing them sequentially over a shared bus. This abstraction layer hides the physical reality of the silicon.
 
-**UMML breaks this paradigm entirely.** 
+"UMML breaks this paradigm entirely." 
 
-1. **The Code *Is* The Circuit:** In UMML, writing `CONNECT node_A TO node_B` is not a software command. It is a direct, physical configuration of a hardware crossbar multiplexer. The source code literally maps to physical copper paths.2. **Bypassing the ISA Abstraction:** For spatial workloads, UMML does not compile down to RISC-V, x86, or ARM instructions. There is no instruction fetch, no decode stage, and no program counter overhead. High-level spatial intent is compiled directly into a hardware configuration bitstream.3. **Bound by the Physical Clock:** This is not a high-level software simulation running on a host CPU's clock. UMML is a fully synthesizable Verilog architecture. Every operation, token transfer, and state change is strictly bound by real clock edges, propagation delays, and physical state machines. Time is a first-class, programmable citizen.
----## 🏛️ Architecture & Core Principles
-UMML operates across three main layers:1. **UMML Source** — Defines the experiment, access pattern, timing measurement, or spatial dataflow graph.2. **Copper ISA** — A custom 16-bit instruction set used by the Copper processor (for traditional sequential fallback).3. **Copper Microarchitecture** — A synthesizable Verilog implementation that models registers, caches, NoC resources, latency, state, and contention.
+1. "The Code *Is* The Circuit:" In UMML, writing `CONNECT node_A TO node_B` is not a software command. It is a direct, physical configuration of a hardware crossbar multiplexer. The source code literally maps to physical copper paths.2. "Bypassing the ISA Abstraction:" For spatial workloads, UMML does not compile down to RISC-V, x86, or ARM instructions. There is no instruction fetch, no decode stage, and no program counter overhead. High-level spatial intent is compiled directly into a hardware configuration bitstream.3. **Bound by the Physical Clock:** This is not a high-level software simulation running on a host CPU's clock. UMML is a fully synthesizable Verilog architecture. Every operation, token transfer, and state change is strictly bound by real clock edges, propagation delays, and physical state machines. Time is a first-class, programmable citizen.
+🏛️ Architecture & Core Principles
+UMML operates across three main layers:1. **UMML Source** — Defines the experiment, access pattern, timing measurement, or spatial dataflow graph.2. "Copper ISA" — A custom 16-bit instruction set used by the Copper processor (for traditional sequential fallback).3. **Copper Microarchitecture** — A synthesizable Verilog implementation that models registers, caches, NoC resources, latency, state, and contention.
 ### Core Principles- **Propagation:** State changes take time. Operations have latency determined by the physical hardware resources involved.- **State Decoupling:** Architectural state and microarchitectural state are separate. Rolling back architectural state does not remove changes that occurred inside the microarchitecture.- **Contention:** Hardware resources are finite. When multiple operations compete for the same resources, backpressure and timing effects appear naturally.
 ### Microarchitectural DomainsUMML models multiple hardware domains to study vulnerabilities that emerge from their interactions:- Cache coherence and MOESI state transitions / RFO traffic- NoC routing, virtual channels, arbitration, and backpressure- DRAM charge and leakage behavior- Speculative execution and branch prediction- Microarchitectural state that survives architectural rollback
----## 🗺️ The UMML Execution Matrix
+ The UMML Execution Matrix
 UMML was constructed by mastering and then transcending every major paradigm in computer architecture.
 ### Stage 1: The 5-Stage In-Order PipelineThe foundation. A classic, deterministic fetch-decode-execute-memory-writeback pipeline, establishing the baseline for instruction propagation, hazard detection, and structural stall modeling.
 ### Stage 2: VLIW (Very Long Instruction Word)Static superscalar execution, proving the engine's ability to handle wide, compiler-bundled instruction streams and exposing how static scheduling relies on finding instruction-level parallelism without hardware intervention.
@@ -104,7 +104,7 @@ In this simulated experiment, NoC backpressure increased the observed latency fr
 * stage5_spatial/ contains the Stage 5 self-hosting spatial compiler, crossbar routing, memory fabric, and pre-silicon security modules (power_monitor_node, dual_rail_encoder, constant_time_node).
 
 ------------------------------
-## 🎯 Why UMML Exists
+## Why UMML Exists
 Hardware vulnerabilities often appear at the boundaries between different components. A cache-coherence problem can interact with NoC contention. NoC behavior can affect timing. Speculation can leave microarchitectural state behind. Memory behavior can introduce another source of timing variation.
 UMML is intended to give researchers a low-level environment for exploring those interactions directly, bridging the gap between high-level architectural simulation and physical silicon reality. It proves that we can design, route, and secure complex spatial fabrics before the chip is ever manufactured.
 ------------------------------
