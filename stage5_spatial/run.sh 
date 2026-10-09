@@ -1,0 +1,14 @@
+#!/bin/bash
+
+# UMML Stage 5 Build and Run Script
+# Requires Icarus Verilog (iverilog) to be installed on your local machine.
+
+echo "=== Compiling UMML Stage 5 Spatial Fabric ==="
+iverilog -g2012 -o umml_stage5_sim stage5_design.sv stage5_tb.sv
+
+if [ $? -eq 0 ]; then
+    echo "=== Compilation Successful. Running Simulation ==="
+    vvp umml_stage5_sim
+else
+    echo "=== Compilation Failed. Check your code. ==="
+fi
