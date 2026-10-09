@@ -92,7 +92,7 @@ SUB R6, R4
 HALT
 ```
 In this simulated experiment, NoC backpressure increased the observed latency from normal noisy cache behavior to an approximately 41-cycle delta. The model exposes the exact interaction between different microarchitectural resources.
----## 📁 Project Structure
+---## Project Structure
 - `asm.sh` and `gen_tb.sh` form the original Copper toolchain.
 
 
@@ -114,4 +114,13 @@ UMML is an evolving open-source project. Contributions can include new instructi
 ## ⚖️ Legal and Ethical Disclaimer
 UMML is intended for educational, defensive, and academic research. Use it only on hardware and systems you are authorized to study. Do not use it to access, extract data from, or compromise systems without permission. Follow responsible disclosure practices when researching real hardware vulnerabilities.
 ------------------------------
+##Opportunities & Contact
+UMML is open-source and free to use. However, I am currently open to:
+- **Full-time roles** in Hardware Security, Pre-Silicon Verification, or Silicon Architecture.
+- **Consulting contracts** for RTL side-channel analysis, DPA modeling, or secure hardware design.
+
+If your team is building secure silicon and needs expertise in constant-time execution, spatial dataflow, or microarchitectural modeling, let's talk.
+📧 **Email: banjojesuloba@gmail.com
+🔗 LinkedIn: https://www.linkedin.com/in/banjo-jesuloba-8a9916421?utm_source=share_via&utm_content=profile&utm_medium=member_android
+____________________________________
 Created and maintained by 0x-jbfrizzy (Jesuloba Banjo).
