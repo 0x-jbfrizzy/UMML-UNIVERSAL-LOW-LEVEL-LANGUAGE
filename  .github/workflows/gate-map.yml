@@ -3,6 +3,10 @@ name: Generate Silicon Gate Map
 on:
   push:
     branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   generate-map:
@@ -10,23 +14,35 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
 
-    - name: Install Yosys (Synthesis)
+    - name: Install Yosys
       run: sudo apt-get update && sudo apt-get install -y yosys
 
-    - name: Install NetlistSVG (Visualizer)
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install NetlistSVG
       run: npm install -g netlistsvg
 
     - name: Synthesize and Generate Map
       run: |
         cd stage5_spatial
-        # 1. Synthesize the swarm_node into basic gates and output JSON
         yosys -p "read_verilog -sv stage5_design.sv; synth -top swarm_node; write_json swarm.json"
-        # 2. Convert that JSON into a visual SVG diagram
         netlistsvg swarm.json -o ../swarm_gate_map.svg
+        ls -la ../swarm_gate_map.svg
 
-    - name: Commit Gate Map to Repository
+    - name: Upload Gate Map as Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: swarm-gate-map
+        path: swarm_gate_map.svg
+
+    - name: Commit Gate Map to Repo
       uses: stefanzweifel/git-auto-commit-action@v5
       with:
         commit_message: "docs: auto-generate swarm_node silicon gate map"
-        file_pattern: 'swarm_gate_map.svg'
+        file_pattern: swarm_gate_map.svg
