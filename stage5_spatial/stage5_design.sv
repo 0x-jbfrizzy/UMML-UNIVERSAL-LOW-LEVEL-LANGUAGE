@@ -178,7 +178,7 @@ module swarm_node (
     reg [3:0] counter; 
     reg busy; 
     reg [15:0] latch_a, latch_b;
-    
+
     always @(posedge clk) begin
         if (rst) begin 
             counter <= 4'd0; 
@@ -200,6 +200,56 @@ module swarm_node (
                     result_ready <= 1'b1; 
                     busy <= 1'b0; 
                 end
+            end
+        end
+    end
+endmodule
+
+// ==========================================
+// STAGE 5.6: SPATIAL SHA-256 ROUND NODE
+// ==========================================
+// This node performs a single round of the SHA-256 compression function.
+// In a spatial fabric, 64 of these nodes would be physically chained 
+// to process a full 512-bit block in a single, zero-latency dataflow wave.
+module sha256_round_node (
+    input wire clk, rst,
+    input wire valid_in,
+    input wire [31:0] a_in, b_in, c_in, d_in, e_in, f_in, g_in, h_in,
+    input wire [31:0] w_t, k_t, // Message schedule word and Round constant
+    output reg valid_out,
+    output reg [31:0] a_out, b_out, c_out, d_out, e_out, f_out, g_out, h_out
+);
+    reg [31:0] ch, maj, sigma0, sigma1, t1, t2;
+
+    // Combinational logic for SHA-256 functions
+    always @(*) begin
+        ch = (e_in & f_in) ^ (~e_in & g_in);
+        maj = (a_in & b_in) ^ (a_in & c_in) ^ (b_in & c_in);
+        
+        // Big Sigma functions (Rotations)
+        sigma0 = {a_in[1:0], a_in[31:2]} ^ {a_in[12:0], a_in[31:13]} ^ {a_in[21:0], a_in[31:22]};
+        sigma1 = {e_in[5:0], e_in[31:6]} ^ {e_in[10:0], e_in[31:11]} ^ {e_in[24:0], e_in[31:25]};
+        
+        t1 = h_in + sigma1 + ch + k_t + w_t;
+        t2 = sigma0 + maj;
+    end
+
+    // Sequential logic for the dataflow handoff
+    always @(posedge clk) begin
+        if (rst) begin
+            valid_out <= 1'b0;
+            {a_out, b_out, c_out, d_out, e_out, f_out, g_out, h_out} <= 256'd0;
+        end else begin
+            valid_out <= valid_in;
+            if (valid_in) begin
+                h_out <= g_in;
+                g_out <= f_in;
+                f_out <= e_in;
+                e_out <= d_in + t1;
+                d_out <= c_in;
+                c_out <= b_in;
+                b_out <= a_in;
+                a_out <= t1 + t2;
             end
         end
     end
