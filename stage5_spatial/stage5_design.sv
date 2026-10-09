@@ -254,3 +254,40 @@ module sha256_round_node (
         end
     end
 endmodule
+// ==========================================
+// STAGE 5.7: HARDWARE ENTROPY & PRNG NODE
+// ==========================================
+// 32-bit Fibonacci Linear Feedback Shift Register (LFSR)
+// Provides deterministic pseudo-random data for cryptographic 
+// masking, nonces, and side-channel countermeasures.
+module lfsr_prng_node (
+    input wire clk, rst,
+    input wire enable,
+    input wire [31:0] seed,
+    output reg [31:0] random_out,
+    output reg valid
+);
+    reg [31:0] lfsr_reg;
+    wire feedback;
+
+    // Standard 32-bit LFSR taps: 32, 22, 2, 1 (indices 31, 21, 1, 0)
+    assign feedback = lfsr_reg[31] ^ lfsr_reg[21] ^ lfsr_reg[1] ^ lfsr_reg[0];
+
+    always @(posedge clk) begin
+        if (rst) begin
+            lfsr_reg <= 32'hDEADBEEF; // Default non-zero seed to prevent lockup
+            random_out <= 32'd0;
+            valid <= 1'b0;
+        end else begin
+            valid <= 1'b0;
+            if (enable) begin
+                lfsr_reg <= {lfsr_reg[30:0], feedback};
+                random_out <= lfsr_reg;
+                valid <= 1'b1;
+            end else if (seed != 32'd0) begin
+                lfsr_reg <= seed; // Allow external reseeding
+                valid <= 1'b1;
+            end
+        end
+    end
+endmodule
