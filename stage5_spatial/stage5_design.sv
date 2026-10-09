@@ -160,13 +160,16 @@ module constant_time_node (
             end
         end
     end
+endmodule
 
 // ==========================================
 // STAGE 5.5: DECENTRALIZED DATAFLOW SWARM NODE
 // ==========================================
 module swarm_node (
-    input wire clk, rst, 
-    input wire [15:0] op_a, op_b, 
+    input wire clk, 
+    input wire rst, 
+    input wire [15:0] op_a, 
+    input wire [15:0] op_b, 
     input wire op_valid,
     input wire [3:0] configured_latency, 
     output reg [15:0] result, 
@@ -178,26 +181,26 @@ module swarm_node (
     
     always @(posedge clk) begin
         if (rst) begin 
-            counter <= 0; 
-            busy <= 0; 
-            result <= 0; 
-            result_ready <= 0; 
+            counter <= 4'd0; 
+            busy <= 1'b0; 
+            result <= 16'd0; 
+            result_ready <= 1'b0; 
         end else begin
-            result_ready <= 0;
+            result_ready <= 1'b0;
             if (op_valid && !busy) begin 
                 latch_a <= op_a; 
                 latch_b <= op_b; 
                 counter <= configured_latency; 
-                busy <= 1; 
+                busy <= 1'b1; 
             end else if (busy) begin
-                if (counter > 1) counter <= counter - 1;
-                else begin 
+                if (counter > 4'd1) begin
+                    counter <= counter - 4'd1;
+                end else begin 
                     result <= latch_a * latch_b; 
-                    result_ready <= 1; 
-                    busy <= 0; 
+                    result_ready <= 1'b1; 
+                    busy <= 1'b0; 
                 end
             end
         end
     end
-endmodule
 endmodule
