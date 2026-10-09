@@ -3,6 +3,8 @@
 # UMML: Universal Low-Level Language Talking Directly to the Machine. Minimizing Abstraction.
 UMML is a hardware-near programming, assembly, and microarchitectural modeling language for studying how computer hardware actually behaves.
 
+![UMML Stage 5 CI](https://github.com/0x-jbfrizzy/UMML-UNIVERSAL-LOW-LEVEL-LANGUAGE/actions/workflows/iverilog-ci.yml/badge.svg)
+
 Most hardware security simulators hide the details that matter. They may simply report a cache miss or a bit flip without exposing the timing, state changes, contention, and interactions underneath. UMML is designed to model those lower-level behaviors directly. It combines a low-level programming language with microarchitectural primitives that can represent things such as cache coherence, NoC traffic, speculation, timing, and resource contention.
  The Paradigm Shift: Beyond Von Neumann
 Traditional computing is trapped by the "Von Neumann Bottleneck": a rigid cycle of fetching instructions from memory, decoding them through an ISA (Instruction Set Architecture), and executing them sequentially over a shared bus. This abstraction layer hides the physical reality of the silicon.
