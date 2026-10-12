@@ -242,7 +242,8 @@ module sha256_round_node (
 endmodule
 // --- STAGE 5.7: HARDWARE ENTROPY & PRNG NODE ---
 
-// 32-bit Fibonacci Linear Feedback Shift Register (LFSR)module lfsr_prng_node (
+// 32-bit Fibonacci Linear Feedback Shift Register (LFSR)
+module lfsr_prng_node (
     input wire clk, rst,
     input wire enable,
     input wire [31:0] seed,
