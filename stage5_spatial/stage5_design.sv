@@ -1,8 +1,6 @@
 `timescale 1ns/1ps
+// --- STAGE 5.1 & 5.2: HARDWARE COMPILER & CROSSBAR ---
 
-// ==========================================
-// STAGE 5.1 & 5.2: HARDWARE COMPILER & CROSSBAR
-// ==========================================
 module grid_compiler_node (
     input wire clk, rst,
     input wire [7:0] char_in,
@@ -73,10 +71,8 @@ module crossbar_node (
         end
     end
 endmodule
+// --- STAGE 5.3: MEMORY & POWER MONITOR ---
 
-// ==========================================
-// STAGE 5.3: MEMORY & POWER MONITOR
-// ==========================================
 module memory_node (
     input wire clk, rst,
     input wire [1:0] write_addr, input wire [15:0] write_data, input wire write_valid,
@@ -118,10 +114,8 @@ module power_monitor_node (
         end
     end
 endmodule
+// --- STAGE 5.4: DUAL-RAIL CRYPTO & CONSTANT TIME ---
 
-// ==========================================
-// STAGE 5.4: DUAL-RAIL CRYPTO & CONSTANT TIME
-// ==========================================
 module dual_rail_encoder_32 (
     input wire clk, rst, input wire [31:0] single_rail_data, input wire data_valid,
     output reg [63:0] dual_rail_data, output reg data_ready
@@ -161,10 +155,8 @@ module constant_time_node (
         end
     end
 endmodule
+// --- STAGE 5.5: DECENTRALIZED DATAFLOW SWARM NODE ---
 
-// ==========================================
-// STAGE 5.5: DECENTRALIZED DATAFLOW SWARM NODE
-// ==========================================
 module swarm_node (
     input wire clk, 
     input wire rst, 
@@ -204,14 +196,7 @@ module swarm_node (
         end
     end
 endmodule
-
-// ==========================================
-// STAGE 5.6: SPATIAL SHA-256 ROUND NODE
-// ==========================================
-// This node performs a single round of the SHA-256 compression function.
-// In a spatial fabric, 64 of these nodes would be physically chained 
-// to process a full 512-bit block in a single, zero-latency dataflow wave.
-module sha256_round_node (
+// --- STAGE 5.6: SPATIAL SHA-256 ROUND NODE ---module sha256_round_node (
     input wire clk, rst,
     input wire valid_in,
     input wire [31:0] a_in, b_in, c_in, d_in, e_in, f_in, g_in, h_in,
@@ -254,13 +239,9 @@ module sha256_round_node (
         end
     end
 endmodule
-// ==========================================
-// STAGE 5.7: HARDWARE ENTROPY & PRNG NODE
-// ==========================================
-// 32-bit Fibonacci Linear Feedback Shift Register (LFSR)
-// Provides deterministic pseudo-random data for cryptographic 
-// masking, nonces, and side-channel countermeasures.
-module lfsr_prng_node (
+// --- STAGE 5.7: HARDWARE ENTROPY & PRNG NODE ---
+
+// 32-bit Fibonacci Linear Feedback Shift Register (LFSR)module lfsr_prng_node (
     input wire clk, rst,
     input wire enable,
     input wire [31:0] seed,
