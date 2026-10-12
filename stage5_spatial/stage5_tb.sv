@@ -54,7 +54,7 @@ module tb_stage5_master;
         @(posedge clk); node_0_a <= 4; node_0_b <= 5; node_0_valid <= 1'b1;
         @(posedge clk); node_0_valid <= 1'b0;
         wait(node_1_ready); #20;
-        $display("Node 1 received routed data: %0d (Expected 20)", node_1_result);
+        $display("Node 1 received routed data: %0d (Expected 60)", node_1_result);
 
         // 2. Constant Time Execution
         $display("\n[TEST 2] Constant-Time Execution");
