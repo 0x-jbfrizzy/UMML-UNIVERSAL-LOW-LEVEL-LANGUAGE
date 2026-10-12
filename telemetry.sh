@@ -1,57 +1,54 @@
-#!/bin/bash
-# UMML Dual-Layer Telemetry Wrapper
-# Tracks Host OS interactions AND Silicon Gate interactions in real-time.
+#!/usr/bin/env bash
+set -euo pipefail
 
-# ANSI Colors
-CYAN='\033[0;36m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
+# UMML Telemetry Collector
+# Captures synthesis metrics and simulation traces for analysis.
 
-echo -e "${CYAN}=========================================${NC}"
-echo -e "${CYAN}  UMML SYSTEM & SILICON TELEMETRY BAR    ${NC}"
-echo -e "${CYAN}=========================================${NC}"
+OUTPUT_DIR="telemetry_data"
+mkdir -p "$OUTPUT_DIR"
 
-# --- LAYER 1: HOST INTERACTION TRACKING ---
-echo -e "\n${YELLOW}[HOST LAYER] Tracking OS Interactions...${NC}"
+# 1. Host Layer Metrics
+START_TIME=$(date +%s)
+START_MEM_KB=$(grep VmRSS /proc/$$/status | awk '{print $2}')
 
-# Record start time and memory
-START_TIME=$SECONDS
-START_MEM=$(grep VmRSS /proc/$$/status 2>/dev/null | awk '{print $2}')
+# 2. ASIC Synthesis (Yosys)
+echo "[INFO] Running Yosys synthesis..." >&2
+yosys -q -p "read_verilog -sv stage5_spatial/stage5_design.sv; synth -top swarm_node; stat" \
+    | tee "$OUTPUT_DIR/yosys_stat.txt"
 
-# Track file interactions (Input/Output)
-echo "  -> Reading Design Files:"
-ls -lh stage5_spatial/stage5_design.sv stage5_spatial/stage5_tb.sv 2>/dev/null | awk '{print "     [FILE] " $9 " (" $5 ")"}'
+GATES=$(grep "Number of cells" "$OUTPUT_DIR/yosys_stat.txt" | awk '{print $4}')
 
-echo "  -> Compiling with Yosys (ASIC Synth)..."
-# Run synthesis and capture gate count
-GATE_STATS=$(yosys -p "read_verilog -sv stage5_spatial/stage5_design.sv; synth -top swarm_node; stat" 2>&1 | grep "Number of cells" | awk '{print $4}')
-echo "     [SILICON] Synthesized $GATE_STATS physical logic gates."
+# 3. Simulation Trace (Icarus Verilog)
+echo "[INFO] Running Icarus simulation..." >&2
+cd stage5_spatial
+iverilog -g2012 -o umml_sim stage5_design.sv stage5_tb.sv
+./umml_sim > ../"$OUTPUT_DIR/vvp_trace.log" 2>&1 || true
+cd ..
 
-echo "  -> Simulating with Icarus Verilog..."
-# Run simulation and capture power/interaction metrics
-SIM_OUTPUT=$(cd stage5_spatial && iverilog -g2012 -o umml_sim stage5_design.sv stage5_tb.sv && vvp umml_sim)
+# Parse trace for key hardware events
+ROUTES_FLIPPED=$(grep -c "Routing MUX" "$OUTPUT_DIR/vvp_trace.log" || echo 0)
+POWER_SPIKES=$(grep -c "Hamming Weight Spike" "$OUTPUT_DIR/vvp_trace.log" || echo 0)
+CYCLES=$(grep "Clock Cycle" "$OUTPUT_DIR/vvp_trace.log" | tail -1 | awk '{print $3}' || echo 0)
 
-# Parse the simulation output for hardware interactions
-ROUTES=$(echo "$SIM_OUTPUT" | grep -c "Routing MUX" 2>/dev/null || echo "0")
-POWER_SPIKES=$(echo "$SIM_OUTPUT" | grep -c "Hamming Weight Spike" 2>/dev/null || echo "0")
-CYCLES=$(echo "$SIM_OUTPUT" | grep "Clock Cycle" | tail -1 | awk '{print $3}' 2>/dev/null || echo "Unknown")
+END_TIME=$(date +%s)
+ELAPSED=$((END_TIME - START_TIME))
+MEM_DELTA=$(( $(grep VmRSS /proc/$$/status | awk '{print $2}') - START_MEM_KB ))
 
-echo -e "\n${GREEN}[SILICON LAYER] Tracking Hardware Interactions...${NC}"
-echo "  -> Clock Cycles Executed: $CYCLES"
-echo "  -> Crossbar Routes Flipped: $ROUTES"
-echo "  -> Power Anomalies (DPA Leaks): $POWER_SPIKES"
+# 4. Generate Structured Report (JSON-like for easy parsing by Python/CI)
+cat <<REPORT > "$OUTPUT_DIR/metrics.json"
+{
+  "timestamp": "$START_TIME",
+  "host_metrics": {
+    "elapsed_seconds": $ELAPSED,
+    "memory_delta_kb": $MEM_DELTA
+  },
+  "silicon_metrics": {
+    "synth_gates": $GATES,
+    "sim_cycles": $CYCLES,
+    "mux_routes_flipped": $ROUTES_FLIPPED,
+    "hd_power_spikes": $POWER_SPIKES
+  }
+}
+REPORT
 
-# --- LAYER 2: FINAL RESOURCE TALLY ---
-END_TIME=$SECONDS
-END_MEM=$(grep VmRSS /proc/$$/status 2>/dev/null | awk '{print $2}')
-DURATION=$((END_TIME - START_TIME))
-
-echo -e "\n${CYAN}-----------------------------------------${NC}"
-echo -e "${CYAN}  EXECUTION SUMMARY${NC}"
-echo -e "${CYAN}-----------------------------------------${NC}"
-echo "  -> Host Time Elapsed: ${DURATION}s"
-echo "  -> Host Memory Delta: $((END_MEM - START_MEM)) KB"
-echo "  -> Status: ${GREEN}VERIFIED${NC}"
-echo -e "${CYAN}=========================================${NC}"
+echo "[DONE] Metrics written to $OUTPUT_DIR/metrics.json" >&2
