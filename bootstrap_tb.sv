@@ -19,12 +19,7 @@ end
 initial begin
     rst = 1;
     #50;
-    rst = 0;
-    
-    // ==========================================
-    // THE "SOURCE CODE" (Raw Numbers in Data Memory)
-    // We are compiling: ADD R0, R1 (twice) then HALT.
-    // ==========================================
+    rst = 0;// SOURCE DATA
     uut.data_memory[0] = 16'd2;  // Opcode: ADD
     uut.data_memory[1] = 16'd0;  // Rd: R0
     uut.data_memory[2] = 16'd1;  // Rs: R1
@@ -35,14 +30,8 @@ initial begin
     
     uut.data_memory[6] = 16'd15; // Opcode: HALT
     uut.data_memory[7] = 16'd0;  // Rd: 0
-    uut.data_memory[8] = 16'd0;  // Rs: 0
-
-    // ==========================================
-    // THE ASSEMBLER ENGINE (Fully Assembled & Hardcoded)
-    // Output target is safely set to address 64 to avoid self-overwrite!
-    // ==========================================
-    
-    // --- SETUP POINTERS ---
+    uut.data_memory[8] = 16'd0;  // Rs: 0// ASSEMBLER ENGINE
+    // Target addr: 64// --- SETUP POINTERS ---
     uut.instr_memory[0]  = 16'h1210; // MOV R2, R1
     uut.instr_memory[1]  = 16'h6210; // SUB R2, R1
     uut.instr_memory[2]  = 16'h1310; // MOV R3, R1
@@ -53,7 +42,7 @@ initial begin
     uut.instr_memory[7]  = 16'h2330; // ADD R3, R3 (32)
     uut.instr_memory[8]  = 16'h2330; // ADD R3, R3 (64) <-- SAFE ZONE START
     
-    // --- COMPILE INSTRUCTION 1 ---
+    // INSTR 1
     uut.instr_memory[9]  = 16'h3420; // LOAD R4, R2
     uut.instr_memory[10] = 16'hA40C; // SHLI R4, 12
     uut.instr_memory[11] = 16'h2210; // ADD R2, R1
