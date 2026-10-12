@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 # UMML Native Spatial Testbench Generator
 # Usage: ./gen_spatial_tb.sh
 
