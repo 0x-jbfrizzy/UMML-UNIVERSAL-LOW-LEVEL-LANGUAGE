@@ -196,7 +196,8 @@ module swarm_node (
         end
     end
 endmodule
-// --- STAGE 5.6: SPATIAL SHA-256 ROUND NODE ---module sha256_round_node (
+// --- STAGE 5.6: SPATIAL SHA-256 ROUND NODE ---
+module sha256_round_node (
     input wire clk, rst,
     input wire valid_in,
     input wire [31:0] a_in, b_in, c_in, d_in, e_in, f_in, g_in, h_in,
