@@ -3,6 +3,7 @@ Talking Directly to the Machine. Minimizing Abstraction.
 
 ![UMML Stage 5 CI](https://github.com/0x-jbfrizzy/UMML-UNIVERSAL-LOW-LEVEL-LANGUAGE/actions/workflows/gate-map.yml/badge.svg)
 ![UMML ASIC Synthesis Check](https://github.com/0x-jbfrizzy/UMML-UNIVERSAL-LOW-LEVEL-LANGUAGE/actions/workflows/yosys-synth.yml/badge.svg)
+![UMML RTL CI](https://github.com/0x-jbfrizzy/UMML-UNIVERSAL-LOW-LEVEL-LANGUAGE/actions/workflows/rtl_ci.yml/badge.svg)
 
 📄 **[Read the Official UMML Technical Whitepaper](https://docs.google.com/document/d/1hXlei_voO40i-5OnjcGMmUQP1mBNZg8GKK7_POBxTQQ/edit?usp=drivesdk)**
 
