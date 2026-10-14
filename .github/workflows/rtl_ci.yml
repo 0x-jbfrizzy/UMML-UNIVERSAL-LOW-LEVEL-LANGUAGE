@@ -1,0 +1,29 @@
+name: UMML RTL CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  simulate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Install Icarus Verilog
+        run: sudo apt-get install -y iverilog
+        
+      - name: Compile Testbench
+        run: |
+          iverilog -g2012 -o sim_pid \
+            creidyll_brainstem/rtl/wddl_subtractor.sv \
+            creidyll_brainstem/rtl/wddl_multiplier.sv \
+            creidyll_brainstem/rtl/wddl_adder.sv \
+            creidyll_brainstem/rtl/spatial_pid_reg.sv \
+            creidyll_brainstem/rtl/umml_spatial_pid_node.sv \
+            creidyll_brainstem/tb/umml_spatial_pid_node_tb.sv
+            
+      - name: Run Simulation
+        run: vvp sim_pid

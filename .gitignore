@@ -1,1 +1,11 @@
-stage5_spatial/umml_stage5_sim
+# Compiled binaries
+sim_pid
+*.out
+
+# Waveform dumps
+*.vcd
+*.fst
+
+# OS files
+.DS_Store
+Thumbs.db

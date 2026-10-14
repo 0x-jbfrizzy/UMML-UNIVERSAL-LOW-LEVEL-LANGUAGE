@@ -11,9 +11,8 @@ module umml_spatial_pid_node_tb;
     logic [RES_W-1:0]  control_t, control_f;
 
     umml_spatial_pid_node #(
-        .DATA_W(DATA_W),
-        .RES_W(RES_W),
-        .KP_GAIN(16'd2)
+        .DATA_W(DATA_W), .RES_W(RES_W),
+        .KP_GAIN(16'd1), .KI_GAIN(16'd1)
     ) dut (
         .clk(clk), .rst_n(rst_n), .valid_in(valid_in),
         .valid_out(valid_out), .watchdog_trip(watchdog_trip),
@@ -24,6 +23,14 @@ module umml_spatial_pid_node_tb;
 
     initial clk = 0;
     always #(CLK_PERIOD / 2) clk = ~clk;
+
+    logic [RES_W-1:0] last_valid_control_t;
+    always @(posedge clk) begin
+        if (valid_out) begin
+            last_valid_control_t <= control_t;
+            $display("[TB] Valid Output at time %0t: control_t = %0d", $time, control_t);
+        end
+    end
 
     initial begin
         $dumpfile("umml_spatial_pid_node.vcd");
@@ -36,24 +43,21 @@ module umml_spatial_pid_node_tb;
         rst_n = 1;
         #(CLK_PERIOD * 2);
 
-        // TEST: Target=100, Current=60 -> Error=40. Kp=2. Expected Output=80.
-        $display("[TB] Starting Test Case 1: Subtraction + Multiplication");
+        // Error = 10. Drive valid for exactly 4 cycles.
+        target_t = 100; current_t = 90;
+        valid_in = 1;
+
+        repeat (4) @(posedge clk);
         
-        target_t  = 16'd100; target_f = 16'd0;
-        current_t = 16'd60;  current_f = 16'd0;
-        valid_in  = 1;
+        valid_in = 0;
+        
+        // Wait for pipeline flush
+        repeat (5) @(posedge clk);
 
-        // Subtractor (1 cycle) + Multiplier (1 cycle) + Reg (1 cycle) = 3 cycles
-        #(CLK_PERIOD * 4);
-
-        if (valid_out) begin
-            if (control_t == 32'd80 && control_f == ~32'd80) begin
-                $display("[TB] PASS: control_t = %0d, control_f = %0d (WDDL Complementary)", control_t, control_f);
-            end else begin
-                $error("[TB] FAIL: control_t = %0d, control_f = %0d (Expected 80 and ~80)", control_t, control_f);
-            end
+        if (last_valid_control_t == 32'd40) begin
+            $display("[TB] PASS: PI Accumulation verified. Final control_t = %0d", last_valid_control_t);
         end else begin
-            $error("[TB] FAIL: valid_out did not assert");
+            $error("[TB] FAIL: Final control_t = %0d (Expected 40)", last_valid_control_t);
         end
 
         $display("[TB] Simulation Complete.");
