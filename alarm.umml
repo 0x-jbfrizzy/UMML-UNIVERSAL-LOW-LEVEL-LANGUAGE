@@ -1,0 +1,16 @@
+# A simple smart home alarm system.
+# Written in plain English. No programming knowledge required.
+
+make a neuron named siren with threshold 10 and leak 0
+make a synapse named motion_detector with trace 10
+make a synapse named door_sensor with trace 10
+
+# External physical sensors put energy into the system
+put physical_motion into the input of motion_detector
+put physical_door into the input of door_sensor
+
+# FIX: We cannot flow two things into the same input. 
+# We must combine them first to avoid a physical short circuit.
+combine the update from motion_detector and door_sensor into the input of siren
+
+start the system
