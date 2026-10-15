@@ -1,0 +1,13 @@
+# A secure smart building network using Metamorphic Obfuscation (Feature 2).
+# The physical routing changes on every transaction, defeating side-channel attacks.
+
+make a neuron named secure_room_a with threshold 1 and leak 0
+make a metamorphic router named secure_hallway
+make a neuron named secure_room_b with threshold 1 and leak 0
+
+put motion_detected into the input of secure_room_a
+
+# Use 'morph' to enable dynamic spatial obfuscation with a specific key
+morph the spike from secure_room_a through secure_hallway to secure_room_b with key 8'hA5
+
+start the system
