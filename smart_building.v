@@ -30,4 +30,19 @@ module umml_top(
   assign w_route_1_req = u_hallway_router.east_req;
   assign u_room_b_light.req_in = w_route_1_req;
   assign u_hallway_router.east_ack = u_room_b_light.ack_out;
+
+  // ==========================================
+  // UMML FEATURE 1: SELF-PROVING ASSERTIONS
+  // ==========================================
+  // ============================================
+  // FORMAL PROOF 1: Deadlock Freedom
+  // Route: room_a_light -> hallway_router -> room_b_light
+  // Property: Router must not hold req indefinitely
+  // ============================================
+  property deadlock_free_1;
+    @(posedge rst_n or posedge w_route_1_req) disable iff (!rst_n)
+    (u_hallway_router.local_req == 1'b1) |-> ##[0:20] (u_hallway_router.east_ack == 1'b1);
+  endproperty
+  assert property (deadlock_free_1);
+  // ==========================================
 endmodule

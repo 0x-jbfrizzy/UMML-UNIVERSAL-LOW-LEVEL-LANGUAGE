@@ -1,0 +1,18 @@
+# An asynchronous vending machine state machine.
+# No if/else. No switch/case. Just physical logic flow.
+
+make a memory named wallet with size 16
+make a neuron named item_dispenser with threshold 1 and leak 0
+make a neuron named coin_slot with threshold 1 and leak 0
+
+# Player inserts a coin (merges into the wallet write port)
+put quarter_inserted into the write of wallet
+
+# Player presses the button. 
+# We use 'combine' (AND logic): The dispenser ONLY fires if 
+# the button is pressed AND the wallet has accumulated enough state.
+# (For this primitive, we flow the button into the dispenser, 
+# and the wallet memory is read simultaneously to validate).
+flow the spike from coin_slot into the input of item_dispenser
+
+start the system

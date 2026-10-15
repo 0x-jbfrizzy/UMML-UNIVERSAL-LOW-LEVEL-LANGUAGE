@@ -1,0 +1,68 @@
+#!/bin/sh
+# UMML Game Runner - Makes hardware simulation feel like a game
+
+if [ -z "$1" ]; then
+    echo "========================================="
+    echo "  UMML - Universal Low-Level Language"
+    echo "========================================="
+    echo ""
+    echo "Usage: ./play <game.umml>"
+    echo ""
+    echo "Available games:"
+    ls *.umml 2>/dev/null | sed 's/^/  - /'
+    echo ""
+    echo "Example: ./play clicker.umml"
+    exit 1
+fi
+
+GAME_FILE=$1
+GAME_NAME=$(basename "$GAME_FILE" .umml)
+
+echo "========================================="
+echo "  Loading: $GAME_NAME"
+echo "========================================="
+echo ""
+
+# Compile the English to silicon
+echo "[COMPILER] Translating English to physical hardware..."
+./umml_compile "$GAME_FILE" > /dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+    echo "[ERROR] Failed to compile. Check your English syntax."
+    exit 1
+fi
+
+echo "[COMPILER] Hardware compiled successfully."
+echo ""
+
+# Compile the Verilog simulation
+echo "[SIMULATOR] Building simulation engine..."
+iverilog -g2012 -o "sim_$GAME_NAME" \
+    creidyll_brainstem/rtl/async_lif_neuron.sv \
+    creidyll_brainstem/rtl/async_stdp_rule.sv \
+    creidyll_brainstem/rtl/async_memory_cell.sv \
+    creidyll_brainstem/rtl/async_mesh_router.sv \
+    creidyll_brainstem/rtl/async_wddl_join.sv \
+    creidyll_brainstem/rtl/async_wddl_merge.sv \
+    "${GAME_NAME}.v" \
+    "tb_${GAME_NAME}.sv" > /dev/null 2>&1
+
+if [ $? -ne 0 ]; then
+    echo "[ERROR] Simulation build failed."
+    exit 1
+fi
+
+echo "[SIMULATOR] Simulation engine ready."
+echo ""
+echo "========================================="
+echo "  Starting Game: $GAME_NAME"
+echo "========================================="
+echo ""
+
+# Run the game
+vvp "sim_$GAME_NAME"
+
+echo ""
+echo "========================================="
+echo "  Game Over"
+echo "========================================="

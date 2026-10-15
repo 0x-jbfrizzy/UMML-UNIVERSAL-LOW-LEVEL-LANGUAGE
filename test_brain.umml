@@ -1,0 +1,10 @@
+# A simple two-neuron network with a learning synapse.
+# Written in plain English.
+
+make a neuron named eye with threshold 15 and leak 2
+make a neuron named brain with threshold 30 and leak 1
+make a synapse named bridge with trace 20
+
+flow the spike from eye into the pre of bridge
+flow the spike from brain into the post of bridge
+flow the update from bridge into the input of brain

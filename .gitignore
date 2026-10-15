@@ -1,11 +1,9 @@
-# Compiled binaries
-sim_pid
-*.out
-
-# Waveform dumps
+# Simulation binaries and waveforms
+sim_*
 *.vcd
-*.fst
 
-# OS files
-.DS_Store
-Thumbs.db
+# Yosys / Nextpnr / EDA artifacts
+*.json
+*.asc
+*.bin
+*_synth.v
