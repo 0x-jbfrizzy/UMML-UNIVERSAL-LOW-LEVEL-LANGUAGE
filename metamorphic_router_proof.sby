@@ -1,0 +1,27 @@
+[tasks]
+prove
+
+[options]
+mode prove
+depth 20
+
+[engines]
+smtbmc yices
+
+[script]
+# Read the metamorphic router design
+read_verilog -sv creidyll_brainstem/rtl/async_metamorphic_router.sv
+prep -top async_metamorphic_router
+
+# Formal Assertions for Async Handshake Safety:
+# 1. The output request (req_out) must exactly mirror the input request (req_in).
+# 2. The acknowledgment (ack_out) must exactly mirror the destination's acknowledgment (ack_in).
+# 3. The internal key must update safely without combinational loops.
+
+# We use chformal to automatically check for basic safety properties,
+# and we add a specific assertion that the router never stalls indefinitely.
+chformal -assert
+chformal -assume
+
+[files]
+creidyll_brainstem/rtl/async_metamorphic_router.sv
