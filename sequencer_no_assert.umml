@@ -1,0 +1,28 @@
+# UMML Asynchronous Music Sequencer (Without Assertions for Demo)
+# A clockless drum machine combining all 4 Uncontestable Features.
+
+# FEATURE 4: Deterministic Initialization (The Spine)
+spine the clock to step_kick for init
+spine the clock to step_snare for init
+
+# MEMORY: Store the beat pattern states
+make a memory named step_kick with size 16
+make a memory named step_snare with size 16
+
+# COMPUTE: The drum sound triggers
+make a neuron named kick_drum with threshold 1 and leak 0
+make a neuron named snare_drum with threshold 1 and leak 0
+
+# FEATURE 2: Metamorphic Spatial Obfuscation
+make a metamorphic router named secure_bus_kick
+morph the spike from step_kick through secure_bus_kick to kick_drum with key 8'hF0
+
+make a metamorphic router named secure_bus_snare
+morph the spike from step_snare through secure_bus_snare to snare_drum with key 8'hA5
+
+# TEMPO: An async pulse generator to drive the rhythm
+make a neuron named tempo_master with threshold 1 and leak 0
+flow the spike from tempo_master into the read of step_kick
+flow the spike from tempo_master into the read of step_snare
+
+start the system
