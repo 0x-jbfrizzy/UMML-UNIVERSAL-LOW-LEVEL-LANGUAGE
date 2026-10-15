@@ -26,7 +26,7 @@ module umml_top(
   // Async Mesh Route: room_a_light -> hallway_router -> room_b_light
   wire w_route_1_req, w_route_1_ack;
   assign u_hallway_router.local_req = u_room_a_light.spike_req;
-  assign u_hallway_router.local_ack = w_route_1_ack;
+  assign w_route_1_ack = u_hallway_router.local_ack;
   assign w_route_1_req = u_hallway_router.east_req;
   assign u_room_b_light.req_in = w_route_1_req;
   assign u_hallway_router.east_ack = u_room_b_light.ack_out;

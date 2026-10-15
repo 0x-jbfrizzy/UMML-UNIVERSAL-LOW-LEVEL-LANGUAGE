@@ -133,14 +133,18 @@ function get_in_port(name, port_hint) {
     body[body_count++] = sprintf("  wire w_route_%d_req, w_route_%d_ack;", wire_count, wire_count)
     
     src_v = get_out_port(src_name)
+    # 1. Source drives the router's local request input
     body[body_count++] = sprintf("  assign u_%s.local_req = u_%s.%s;", router_name, src_name, src_v)
-    body[body_count++] = sprintf("  assign u_%s.local_ack = w_route_%d_ack;", router_name, wire_count)
+    
+    # 2. FIX: Router OUTPUTS the local acknowledgment to the wire
+    body[body_count++] = sprintf("  assign w_route_%d_ack = u_%s.local_ack;", wire_count, router_name)
     
     dst_v_req = get_in_port(dst_name, "input")
+    # 3. Router OUTPUTS the east request to the destination
     body[body_count++] = sprintf("  assign w_route_%d_req = u_%s.east_req;", wire_count, router_name)
     body[body_count++] = sprintf("  assign u_%s.%s = w_route_%d_req;", dst_name, dst_v_req, wire_count)
     
-    # FIX: Proper async backpressure. Destination's ack_out drives the router's east_ack.
+    # 4. Destination OUTPUTS the acknowledgment back to the router's east input
     body[body_count++] = sprintf("  assign u_%s.east_ack = u_%s.ack_out;", router_name, dst_name)
 }
 
