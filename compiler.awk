@@ -41,12 +41,11 @@ BEGIN {
 function get_out_port(name) {
     if (comp_type[name] == "neuron") return "spike_req"
     if (comp_type[name] == "synapse") return "update_req"
-    if (comp_type[name] == "memory") return "rd_ack" # Memory outputs ack when read
+    if (comp_type[name] == "memory") return "rd_ack"
     return "req_out"
 }
 
 function get_in_port(name, port_hint) {
-    # FIX: Check component type FIRST to prevent overriding neuron/synapse ports
     if (comp_type[name] == "memory") {
         if (port_hint == "write") return "wr_req"
         if (port_hint == "read") return "rd_req"
@@ -157,12 +156,21 @@ function get_in_port(name, port_hint) {
 END {
     print "module umml_top("
     print "  input logic rst_n"
-    # FIX: Only print comma and inputs if there are actually inputs
-    if (input_count > 0) {
+    
+    # FIX: Deduplicate inputs before printing
+    unique_count = 0
+    for (i=0; i<input_count; i++) {
+        if (!seen[inputs[i]]) {
+            seen[inputs[i]] = 1
+            unique_inputs[unique_count++] = inputs[i]
+        }
+    }
+    
+    if (unique_count > 0) {
         print ","
-        for (i=0; i<input_count; i++) {
-            if (i == input_count - 1) printf "  input logic %s\n", inputs[i]
-            else printf "  input logic %s,\n", inputs[i]
+        for (i=0; i<unique_count; i++) {
+            if (i == unique_count - 1) printf "  input logic %s\n", unique_inputs[i]
+            else printf "  input logic %s,\n", unique_inputs[i]
         }
     }
     print ");"

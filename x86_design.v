@@ -1,5 +1,7 @@
 module umml_top(
   input logic rst_n
+,
+  input logic execute_instr
 );
   async_memory_cell #(.DATA_W(64)) u_reg_rax (
     .rst_n(rst_n), .wr_req(), .wr_ack(), .wr_data_t(16'd0), .wr_data_f(~16'd0),
@@ -47,4 +49,8 @@ module umml_top(
   wire w_4;
   assign w_4 = u_alu_2.spike_req;
   assign u_reg_rcx.wr_req = w_4;
+  // External Input: execute_instr
+  assign u_reg_rbx.rd_req = execute_instr;
+  // External Input: execute_instr
+  assign u_reg_rax.rd_req = execute_instr;
 endmodule
