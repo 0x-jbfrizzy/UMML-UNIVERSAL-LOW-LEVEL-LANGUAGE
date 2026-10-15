@@ -1,0 +1,18 @@
+# UMML FEATURE 3: Cross-Architecture Spatial Mapping (x86-64)
+# Input: x86 Assembly -> Output: UMML Spatial Dataflow
+
+make a memory named reg_rax with size 64
+make a memory named reg_rbx with size 64
+make a memory named reg_rcx with size 64
+
+# Mapped Instruction: ADD rax, rbx
+make a neuron named alu_1 with threshold 1 and leak 0
+merge the spike from reg_rbx and reg_rax into the input of alu_1
+flow the spike from alu_1 into the write of reg_rax
+
+# Mapped Instruction: SUB rcx, rax
+make a neuron named alu_2 with threshold 1 and leak 0
+merge the spike from reg_rax and reg_rcx into the input of alu_2
+flow the spike from alu_2 into the write of reg_rcx
+
+start the system
