@@ -1,0 +1,9 @@
+# UMML FEATURE 4: Deterministic Hardware Clock Flank Isolation
+# Uses a global clock ONLY for initialization, then gates it off for zero-power async operation.
+
+make a memory named control_reg with size 16
+
+# Use the spine to provide a deterministic clock edge for initialization
+spine the clock to control_reg for init
+
+start the system

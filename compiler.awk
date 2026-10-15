@@ -4,6 +4,7 @@ BEGIN {
     proof_count = 0
     comp_count = 0
     body_count = 0
+    has_spine = 0
 }
 
 /^#/ || /^$/ { next }
@@ -153,24 +154,41 @@ function get_in_port(name, port_hint) {
     }
 }
 
+/^spine/ {
+    has_spine = 1
+    body[body_count++] = "  // FEATURE 4: Deterministic Clock Spine Initialization"
+    body[body_count++] = "  logic spine_enable;"
+    body[body_count++] = "  logic isolated_init_clk;"
+    body[body_count++] = "  async_clock_spine u_spine ("
+    body[body_count++] = "    .global_clk(clk_in),"
+    body[body_count++] = "    .rst_n(rst_n),"
+    body[body_count++] = "    .spine_enable(spine_enable),"
+    body[body_count++] = "    .isolated_clk(isolated_init_clk)"
+    body[body_count++] = "  );"
+    body[body_count++] = "  // Note: In a full implementation, isolated_init_clk routes to control registers"
+}
+
 END {
-    print "module umml_top("
-    print "  input logic rst_n"
+    # FIX: Build port list cleanly to guarantee zero trailing commas
+    port_count = 0
+    ports[port_count++] = "  input logic rst_n"
+    if (has_spine) {
+        ports[port_count++] = "  input logic clk_in"
+    }
     
-    # FIX: Deduplicate inputs before printing
-    unique_count = 0
     for (i=0; i<input_count; i++) {
         if (!seen[inputs[i]]) {
             seen[inputs[i]] = 1
-            unique_inputs[unique_count++] = inputs[i]
+            ports[port_count++] = sprintf("  input logic %s", inputs[i])
         }
     }
     
-    if (unique_count > 0) {
-        print ","
-        for (i=0; i<unique_count; i++) {
-            if (i == unique_count - 1) printf "  input logic %s\n", unique_inputs[i]
-            else printf "  input logic %s,\n", unique_inputs[i]
+    print "module umml_top("
+    for (i=0; i<port_count; i++) {
+        if (i == port_count - 1) {
+            print ports[i]
+        } else {
+            print ports[i] ","
         }
     }
     print ");"
