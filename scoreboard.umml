@@ -1,0 +1,13 @@
+# A simple asynchronous scoreboard.
+# It remembers the game state without a clock.
+
+make a memory named high_score with size 16
+make a neuron named player_action with threshold 1 and leak 0
+
+# When the player acts, it writes to the memory
+put player_button into the write of high_score
+
+# We can read the memory later to display it
+flow the spike from player_action into the read of high_score
+
+start the system
