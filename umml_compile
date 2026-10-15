@@ -1,0 +1,15 @@
+#!/bin/sh
+# UMML Native Compiler - Pure POSIX Shell
+# Zero abstractions. Direct text-to-silicon translation.
+
+if [ -z "$1" ]; then
+    echo "Usage: ./umml_compile <source.umml>"
+    exit 1
+fi
+
+INPUT_FILE=$1
+OUTPUT_FILE="${1%.umml}.v"
+
+awk -f compiler.awk "$INPUT_FILE" > "$OUTPUT_FILE"
+
+echo "Compiled $INPUT_FILE -> $OUTPUT_FILE"

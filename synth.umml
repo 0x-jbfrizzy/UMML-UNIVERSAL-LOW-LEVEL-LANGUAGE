@@ -1,0 +1,19 @@
+# A simple asynchronous music synthesizer.
+# No loops. No variables. Just sound flowing through hardware.
+
+make a neuron named kick_drum with threshold 10 and leak 5
+make a neuron named snare_drum with threshold 15 and leak 3
+make a neuron named master_output with threshold 20 and leak 1
+
+# The player hits a key, putting energy into the system
+put midi_kick_trigger into the input of kick_drum
+put midi_snare_trigger into the input of snare_drum
+
+# Separate the drum signals so they can be processed individually
+separate the spike from kick_drum into effect_a and effect_b
+separate the spike from snare_drum into effect_c and effect_d
+
+# Combine them back together into the master output
+combine the spike from effect_a and effect_c into the input of master_output
+
+start the system
