@@ -1,0 +1,13 @@
+# A simple asynchronous clicker game.
+# No loops. No variables. Just physical state and flow.
+
+make a neuron named score with threshold 5 and leak 0
+make a neuron named reward with threshold 1 and leak 0
+
+# Every time the player clicks, the score neuron accumulates it
+put player_click into the input of score
+
+# When the score reaches the threshold (5 clicks), it spikes and triggers a reward
+flow the spike from score into the input of reward
+
+start the system
