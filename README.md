@@ -13,7 +13,7 @@
     </p>
 </div>
 
-## 🚀 The Paradigm Shift: Death of the Software-vs-Hardware Trade-off
+##  The Paradigm Shift: Death of the Software-vs-Hardware Trade-off
 
 For decades, computing has been trapped in a zero-sum game: specialized hardware accelerators offer performance but lack software compatibility, while general-purpose CPUs (x86, ARM, RISC-V) are burdened by power-hungry, line-by-line instruction loops and rigid architecture lock-in.
 
@@ -23,7 +23,7 @@ It is no longer just a microarchitectural simulator. It is a **zero-abstraction,
 
 ---
 
-## 🏆 The 4 Uncontestable Features
+##  The 4 Uncontestable Features
 
 UMML introduces four foundational pillars that make direct comparison to traditional processors obsolete:
 
@@ -41,7 +41,7 @@ Pure asynchronous systems are incredibly efficient, but initialization benefits 
 
 ---
 
-## 🏗️ Architecture & Core Principles
+##  Architecture & Core Principles
 
 UMML combines a low-level programming language with microarchitectural primitives that model real physical behavior:
 
@@ -52,7 +52,7 @@ UMML combines a low-level programming language with microarchitectural primitive
 
 ---
 
-## 🥁 The Ultimate Proof: Asynchronous Music Sequencer
+##  The Ultimate Proof: Asynchronous Music Sequencer
 
 To prove these concepts, UMML includes a fully functional, clockless drum machine (`sequencer_no_assert.umml`). 
 
@@ -82,7 +82,7 @@ When compiled and simulated, this design:
 
 ---
 
-## 🛠️ Zero-Bloat Toolchain
+## Zero-Bloat Toolchain
 
 UMML's toolchain requires **no Python, no C, and no massive EDA suites**. It runs entirely on native POSIX shell, `awk`, and Icarus Verilog.
 
