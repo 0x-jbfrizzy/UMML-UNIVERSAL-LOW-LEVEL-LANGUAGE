@@ -1,0 +1,18 @@
+# A distributed smart building network.
+# Combines Mesh Routing and State Machines.
+
+# Room A
+make a neuron named room_a_light with threshold 1 and leak 0
+make a router named hallway_router
+
+# Room B
+make a neuron named room_b_light with threshold 1 and leak 0
+
+# External triggers
+put motion_sensor_a into the input of room_a_light
+put motion_sensor_b into the input of room_b_light
+
+# The Mesh: If Room A's light turns on, route that spike through the hallway to Room B
+route the spike from room_a_light through hallway_router to room_b_light
+
+start the system

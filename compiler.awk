@@ -34,6 +34,13 @@ BEGIN {
         body[body_count++] = "    .wr_req(), .wr_ack(), .wr_data_t(16'd0), .wr_data_f(~16'd0),"
         body[body_count++] = "    .rd_req(), .rd_ack(), .rd_data_t(), .rd_data_f()"
         body[body_count++] = "  );"
+    } else if (type == "router") {
+        body[body_count++] = sprintf("  async_mesh_router u_%s (", name)
+        body[body_count++] = "    .rst_n(rst_n),"
+        body[body_count++] = "    .west_req(1'b0), .west_ack(),"
+        body[body_count++] = "    .east_req(), .east_ack(),"
+        body[body_count++] = "    .local_req(), .local_ack()"
+        body[body_count++] = "  );"
     }
 }
 
@@ -50,7 +57,7 @@ function get_in_port(name, port_hint) {
     if (port_hint == "read") return "rd_req"
     if (comp_type[name] == "neuron") return "req_in"
     if (comp_type[name] == "synapse") return "pre_req"
-    if (comp_type[name] == "memory") return "wr_req" # Default to write for memory
+    if (comp_type[name] == "memory") return "wr_req"
     return "req_in"
 }
 
@@ -118,6 +125,25 @@ function get_in_port(name, port_hint) {
     body[body_count++] = sprintf("  assign u_%s.%s = w_merge_%d_req;", dst_name, get_in_port(dst_name, dst_port), wire_count)
 }
 
+/^route/ {
+    src_port = $3; src_name = $5; router_name = $7; dst_name = $9
+    wire_count++
+    
+    body[body_count++] = sprintf("  // Async Mesh Route: %s -> %s -> %s", src_name, router_name, dst_name)
+    body[body_count++] = sprintf("  wire w_route_%d_req, w_route_%d_ack;", wire_count, wire_count)
+    
+    src_v = get_out_port(src_name)
+    body[body_count++] = sprintf("  assign u_%s.local_req = u_%s.%s;", router_name, src_name, src_v)
+    body[body_count++] = sprintf("  assign u_%s.local_ack = w_route_%d_ack;", router_name, wire_count)
+    
+    dst_v_req = get_in_port(dst_name, "input")
+    body[body_count++] = sprintf("  assign w_route_%d_req = u_%s.east_req;", wire_count, router_name)
+    body[body_count++] = sprintf("  assign u_%s.%s = w_route_%d_req;", dst_name, dst_v_req, wire_count)
+    
+    # FIX: Proper async backpressure. Destination's ack_out drives the router's east_ack.
+    body[body_count++] = sprintf("  assign u_%s.east_ack = u_%s.ack_out;", router_name, dst_name)
+}
+
 END {
     print "module umml_top("
     print "  input logic rst_n,"
@@ -130,14 +156,4 @@ END {
         print body[i]
     }
     print "endmodule"
-}
-
-/^route/ {
-    # "route the spike from brain1 to brain2 through the mesh"
-    src_name = $5; dst_name = $9
-    wire_count++
-    body[body_count++] = sprintf("  // Async Mesh Route: %s to %s", src_name, dst_name)
-    body[body_count++] = sprintf("  wire w_route_%d_req, w_route_%d_ack;", wire_count, wire_count)
-    body[body_count++] = sprintf("  assign w_route_%d_req = u_%s.spike_req;", wire_count, src_name)
-    body[body_count++] = sprintf("  assign u_%s.req_in = w_route_%d_req;", dst_name, wire_count)
 }

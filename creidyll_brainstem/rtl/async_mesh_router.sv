@@ -1,37 +1,30 @@
 //-----------------------------------------------------------------------------
 // Module: async_mesh_router
-// Desc  : Asynchronous 2D Mesh Router. Routes spike tokens North, South, East, West.
+// Desc  : Asynchronous Linear Pipeline Router. 
+//         Routes tokens from West to East, or injects Local tokens.
 //         Uses pure handshake pressure. Zero idle power. No clock.
 //-----------------------------------------------------------------------------
 module async_mesh_router (
     input  logic rst_n,
     
-    // North Port
-    input  logic n_req, output logic n_ack,
-    // South Port
-    input  logic s_req, output logic s_ack,
-    // East Port
-    input  logic e_req, output logic e_ack,
-    // West Port
-    input  logic w_req, output logic w_ack,
+    // West Port (Incoming from previous node)
+    input  logic west_req, output logic west_ack,
     
-    // Local Compute Port (Connects to a Neuron/Memory)
+    // East Port (Outgoing to next node)
+    output logic east_req, input  logic east_ack,
+    
+    // Local Port (Injecting from a local neuron/memory)
     input  logic local_req, output logic local_ack
 );
 
-    // Simplified Routing Logic for Primitive Testing:
-    // Local fires -> goes North. North fires -> goes Local.
-    // (In a full mesh, we would add destination headers to the token).
+    // Async Merge Logic: East fires if West OR Local has a token.
+    assign east_req = west_req | local_req;
     
-    assign n_req = local_req;
-    assign local_ack = n_ack;
+    // Back-pressure Logic: 
+    // West is acknowledged ONLY if East is ready AND Local is NOT injecting.
+    assign west_ack = east_ack & ~local_req;
     
-    assign local_req = n_req; 
-    assign n_ack = local_ack;
-
-    // Unused ports tied off to prevent floating wires
-    assign s_ack = s_req;
-    assign e_ack = e_req;
-    assign w_ack = w_req;
+    // Local is acknowledged ONLY if East is ready AND West is NOT injecting.
+    assign local_ack = east_ack & ~west_req;
 
 endmodule
