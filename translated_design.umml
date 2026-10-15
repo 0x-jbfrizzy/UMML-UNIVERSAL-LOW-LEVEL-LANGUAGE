@@ -1,0 +1,20 @@
+# UMML FEATURE 3: Cross-Architecture Spatial Mapping
+# Input: RISC-V Assembly -> Output: UMML Spatial Dataflow
+
+make a memory named reg_x1 with size 16
+make a memory named reg_x2 with size 16
+make a memory named reg_x3 with size 16
+make a memory named reg_x5 with size 16
+make a memory named reg_x6 with size 16
+
+# Mapped Instruction: ADD x5, x1, x2
+make a neuron named alu_1 with threshold 1 and leak 0
+merge the spike from reg_x1 and reg_x2 into the input of alu_1
+flow the spike from alu_1 into the write of reg_x5
+
+# Mapped Instruction: SUB x6, x5, x3
+make a neuron named alu_2 with threshold 1 and leak 0
+merge the spike from reg_x5 and reg_x3 into the input of alu_2
+flow the spike from alu_2 into the write of reg_x6
+
+start the system
