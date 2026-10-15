@@ -1,7 +1,6 @@
 BEGIN {
-    print "module umml_top("
-    print "  input logic rst_n"
-    print ");"
+    input_count = 0
+    body_count = 0
     wire_count = 0
 }
 
@@ -9,6 +8,8 @@ BEGIN {
 
 /^make/ {
     type = $3; name = $5
+    comp_type[name] = type
+    
     thresh = 20; leak = 2; trace = 15
     for(i=1; i<=NF; i++) {
         if ($i == "threshold") thresh = $(i+1)
@@ -16,70 +17,108 @@ BEGIN {
         if ($i == "trace") trace = $(i+1)
     }
     if (type == "neuron") {
-        printf "  async_lif_neuron #(.THRESHOLD(%d), .LEAK(%d)) u_%s (\n", thresh, leak, name
-        printf "    .rst_n(rst_n), .req_in(), .ack_out(), .data_in_t(), .data_in_f(),\n"
-        printf "    .spike_req(%s_spike), .spike_ack()\n  );\n", name
+        body[body_count++] = sprintf("  async_lif_neuron #(.THRESHOLD(%d), .LEAK(%d)) u_%s (", thresh, leak, name)
+        body[body_count++] = "    .rst_n(rst_n), .req_in(), .ack_out(),"
+        # FIX: Tie data ports to a default value of 1 so the accumulator works
+        body[body_count++] = "    .data_in_t(16'd1), .data_in_f(~16'd1),"
+        body[body_count++] = sprintf("    .spike_req(%s_spike), .spike_ack()", name)
+        body[body_count++] = "  );"
     } else if (type == "synapse") {
-        printf "  async_stdp_rule #(.TRACE_MAX(%d)) u_%s (\n", trace, name
-        printf "    .rst_n(rst_n), .pre_req(), .pre_ack(), .post_req(), .post_ack(),\n"
-        printf "    .update_req(%s_update), .update_ack(), .update_data_t(), .update_data_f()\n  );\n", name
+        body[body_count++] = sprintf("  async_stdp_rule #(.TRACE_MAX(%d)) u_%s (", trace, name)
+        body[body_count++] = "    .rst_n(rst_n), .pre_req(), .pre_ack(), .post_req(), .post_ack(),"
+        body[body_count++] = "    .update_req(), .update_ack(), .update_data_t(), .update_data_f()"
+        body[body_count++] = "  );"
     }
+}
+
+function get_out_port(name) {
+    if (comp_type[name] == "neuron") return "spike_req"
+    if (comp_type[name] == "synapse") return "update_req"
+    return "req_out"
+}
+
+function get_in_port(name, port_hint) {
+    if (port_hint == "pre") return "pre_req"
+    if (port_hint == "post") return "post_req"
+    if (comp_type[name] == "neuron") return "req_in"
+    if (comp_type[name] == "synapse") return "pre_req"
+    return "req_in"
+}
+
+/^put/ {
+    src_name = $2; dst_port = $5; dst_name = $7
+    inputs[input_count++] = src_name
+    dst_v = get_in_port(dst_name, dst_port)
+    body[body_count++] = sprintf("  // External Input: %s", src_name)
+    body[body_count++] = sprintf("  assign u_%s.%s = %s;", dst_name, dst_v, src_name)
 }
 
 /^flow/ {
     src_port = $3; src_name = $5; dst_port = $8; dst_name = $10
     wire_count++; wire_name = "w_" wire_count
-    printf "  wire %s;\n", wire_name
+    body[body_count++] = sprintf("  wire %s;", wire_name)
     
-    if (src_port == "spike") src_v = "spike_req"
-    else if (src_port == "update") src_v = "update_req"
-    else src_v = src_port
-    
-    if (dst_port == "input") dst_v = "req_in"
-    else if (dst_port == "pre") dst_v = "pre_req"
-    else if (dst_port == "post") dst_v = "post_req"
-    else dst_v = dst_port
+    src_v = get_out_port(src_name)
+    dst_v = get_in_port(dst_name, dst_port)
 
-    printf "  assign %s = u_%s.%s;\n", wire_name, src_name, src_v
-    printf "  assign u_%s.%s = %s;\n", dst_name, dst_v, wire_name
-}
-
-/^put/ {
-    src_name = $2; dst_port = $5; dst_name = $7
-    if (dst_port == "input") dst_v = "req_in"
-    else dst_v = dst_port
-    printf "  // External Input: %s\n", src_name
-    printf "  assign u_%s.%s = 1;\n", dst_name, dst_v
+    body[body_count++] = sprintf("  assign %s = u_%s.%s;", wire_name, src_name, src_v)
+    body[body_count++] = sprintf("  assign u_%s.%s = %s;", dst_name, dst_v, wire_name)
 }
 
 /^separate/ {
     src_port = $3; src_name = $5; dst1 = $7; dst2 = $9
     wire_count++
-    printf "  // Async Fork: separate %s\n", src_name
-    printf "  wire w_sep_%d_a, w_sep_%d_b;\n", wire_count, wire_count
-    printf "  assign w_sep_%d_a = u_%s.spike_req;\n", wire_count, src_name
-    printf "  assign w_sep_%d_b = u_%s.spike_req;\n", wire_count, src_name
-    printf "  assign u_%s.req_in = w_sep_%d_a;\n", dst1, wire_count
-    printf "  assign u_%s.req_in = w_sep_%d_b;\n", dst2, wire_count
+    body[body_count++] = sprintf("  // Async Fork: separate %s", src_name)
+    body[body_count++] = sprintf("  wire w_sep_%d_a, w_sep_%d_b;", wire_count, wire_count)
+    
+    src_v = get_out_port(src_name)
+    dst_v1 = get_in_port(dst1, "input")
+    dst_v2 = get_in_port(dst2, "input")
+    
+    body[body_count++] = sprintf("  assign w_sep_%d_a = u_%s.%s;", wire_count, src_name, src_v)
+    body[body_count++] = sprintf("  assign w_sep_%d_b = u_%s.%s;", wire_count, src_name, src_v)
+    body[body_count++] = sprintf("  assign u_%s.%s = w_sep_%d_a;", dst1, dst_v1, wire_count)
+    body[body_count++] = sprintf("  assign u_%s.%s = w_sep_%d_b;", dst2, dst_v2, wire_count)
 }
 
 /^combine/ {
-    # UPGRADE: Use a true async C-element join instead of a wire OR
     src_port = $3; src1 = $5; src2 = $7; dst_port = $10; dst_name = $12
     wire_count++
-    printf "  // Async Join (C-Element): combine %s and %s into %s\n", src1, src2, dst_name
-    printf "  wire w_join_%d_req, w_join_%d_ack;\n", wire_count, wire_count
-    printf "  async_wddl_join u_join_%d (\n", wire_count
-    printf "    .rst_n(rst_n),\n"
-    printf "    .req_a(u_%s.spike_req), .ack_a(),\n", src1
-    printf "    .req_b(u_%s.spike_req), .ack_b(),\n", src2
-    printf "    .req_out(w_join_%d_req), .ack_in(1'b0)\n  );\n", wire_count
-    
-    if (dst_port == "input") dst_v = "req_in"
-    else dst_v = dst_port
-    printf "  assign u_%s.%s = w_join_%d_req;\n", dst_name, dst_v, wire_count
+    body[body_count++] = sprintf("  // Async Join (AND): combine %s and %s into %s", src1, src2, dst_name)
+    body[body_count++] = sprintf("  wire w_join_%d_req, w_join_%d_ack;", wire_count, wire_count)
+    body[body_count++] = sprintf("  async_wddl_join u_join_%d (", wire_count)
+    body[body_count++] = "    .rst_n(rst_n),"
+    body[body_count++] = sprintf("    .req_a(u_%s.%s), .ack_a(),", src1, get_out_port(src1))
+    body[body_count++] = sprintf("    .req_b(u_%s.%s), .ack_b(),", src2, get_out_port(src2))
+    body[body_count++] = sprintf("    .req_out(w_join_%d_req), .ack_in(1'b0)", wire_count)
+    body[body_count++] = "  );"
+    body[body_count++] = sprintf("  assign u_%s.%s = w_join_%d_req;", dst_name, get_in_port(dst_name, dst_port), wire_count)
+}
+
+/^merge/ {
+    src_port = $3; src1 = $5; src2 = $7; dst_port = $10; dst_name = $12
+    wire_count++
+    body[body_count++] = sprintf("  // Async Merge (OR): merge %s and %s into %s", src1, src2, dst_name)
+    body[body_count++] = sprintf("  wire w_merge_%d_req, w_merge_%d_ack_a, w_merge_%d_ack_b;", wire_count, wire_count, wire_count)
+    body[body_count++] = sprintf("  async_wddl_merge u_merge_%d (", wire_count)
+    body[body_count++] = "    .rst_n(rst_n),"
+    body[body_count++] = sprintf("    .req_a(u_%s.%s), .ack_a(w_merge_%d_ack_a),", src1, get_out_port(src1), wire_count)
+    body[body_count++] = sprintf("    .req_b(u_%s.%s), .ack_b(w_merge_%d_ack_b),", src2, get_out_port(src2), wire_count)
+    body[body_count++] = sprintf("    .req_out(w_merge_%d_req), .ack_in(1'b0)", wire_count)
+    body[body_count++] = "  );"
+    body[body_count++] = sprintf("  assign u_%s.%s = w_merge_%d_req;", dst_name, get_in_port(dst_name, dst_port), wire_count)
 }
 
 END {
+    print "module umml_top("
+    print "  input logic rst_n,"
+    for (i=0; i<input_count; i++) {
+        if (i == input_count - 1) printf "  input logic %s\n", inputs[i]
+        else printf "  input logic %s,\n", inputs[i]
+    }
+    print ");"
+    for (i=0; i<body_count; i++) {
+        print body[i]
+    }
     print "endmodule"
 }

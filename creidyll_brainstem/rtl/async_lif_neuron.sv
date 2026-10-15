@@ -19,33 +19,31 @@ module async_lif_neuron #(
 );
 
     logic [DATA_W-1:0] state_t, state_f;
+    logic [DATA_W-1:0] next_state_t;
 
-    // Deterministic initialization via initial block
     initial begin
         state_t = '0;
         state_f = '1;
+        spike_req = 1'b0; // FIX: Initialize output
     end
 
-    // Combinational next-state logic (Integrate + Leak)
-    logic [DATA_W-1:0] next_state_t;
     assign next_state_t = (state_t + data_in_t > LEAK) ? (state_t + data_in_t - LEAK) : '0;
+    assign ack_out = req_in;
 
-    // Event-triggered state update (req_in replaces the clock)
+    // FIX: Drive spike_req inside the always block to sync with state updates
     always @(posedge req_in or negedge rst_n) begin
         if (!rst_n) begin
             state_t <= '0; 
             state_f <= '1;
+            spike_req <= 1'b0;
         end else begin
             state_t <= next_state_t; 
             state_f <= ~next_state_t;
+            
+            // Evaluate threshold on the NEXT state to avoid NBA race conditions
+            if (next_state_t >= THRESHOLD) spike_req <= 1'b1;
+            else spike_req <= 1'b0;
         end
     end
-
-    // Spike Generation (The "Fire")
-    // FIX: Must be a token (pulse), not a level flag. Drops when req_in drops.
-    assign spike_req = req_in & (state_t >= THRESHOLD);
-    
-    // Early acknowledge to upstream
-    assign ack_out = req_in;
 
 endmodule
