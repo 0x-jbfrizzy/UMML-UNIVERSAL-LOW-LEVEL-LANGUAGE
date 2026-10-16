@@ -7,3 +7,5 @@ sim_*
 *.asc
 *.bin
 *_synth.v
+examples/hover_shoe.umml
+examples/hover_shoe.v
