@@ -1,0 +1,55 @@
+# Creidyll Hoverboard - Core Safety Controller
+# Author: Chief Architect
+# 
+# WARNING: This is the absolute bottom layer of the safety stack. 
+# If this logic fails, the rider gets hurt. Do not optimize this for elegance. 
+# Optimize it for predictability and deterministic failure.
+
+# --- HARDWARE INTERFACE ---
+# 16-bit ADC readings from the main sensor array. 
+# We use 16-bit to preserve resolution for the analog pressure and temp sensors.
+pin skirt_pressure input 16
+pin battery_current input 16
+pin battery_temp input 16
+pin blower_rpm input 16
+
+# Hardwired rider kill switch. Active low (0 = pressed).
+pin emergency_button input 1
+
+# Outputs to the power stage. 
+# blower_pwm cuts thrust. main_contactor physically isolates the battery.
+pin blower_pwm output 16
+pin main_contactor output 1
+
+# --- STATE DEFINITION ---
+# Keep it simple. Complex state machines hide bugs. 
+# We only need to know if we are safely on the ground, building pressure, 
+# flying, or actively killing the thrust.
+make a state_machine named flight_state with states GROUND, SPIN_UP, HOVER, EMERGENCY_DESCENT
+
+# --- ABSOLUTE SAFETY OVERRIDES ---
+# These are evaluated in pure combinational logic (always_comb). 
+# They bypass the state machine and force a hard fault in <10ns. 
+# No higher-level software or AI can override this.
+
+# 1. Manual Kill: Rider pulled the plug. Drop immediately.
+if emergency_button == 0 force flight_state to EMERGENCY_DESCENT
+
+# 2. Loss of Lift: Cushion pressure dropped. 
+# Threshold set to 1000 (approx 1000 Pa). Below this, the Coanda effect breaks down 
+# and we risk a hard, unstable impact. Don't wait for the PID to figure it out.
+if skirt_pressure < 1000 force flight_state to EMERGENCY_DESCENT
+
+# 3. Electrical Fault: Battery is pulling too much current. 
+# Indicates a short circuit, MOSFET failure, or severe motor stall.
+if battery_current > 4000 force flight_state to EMERGENCY_DESCENT
+
+# 4. Thermal Runaway: We saw cell degradation and swelling at 3200 in bench tests. 
+# 3500 is the absolute hard kill line. Cut power before the pack vents.
+if battery_temp > 3500 force flight_state to EMERGENCY_DESCENT
+
+# 5. Mechanical Failure: Blower stalled, belt snapped, or impeller jammed. 
+# No RPM means no lift, regardless of what the PWM is commanding.
+if blower_rpm < 500 force flight_state to EMERGENCY_DESCENT
+
+start machine

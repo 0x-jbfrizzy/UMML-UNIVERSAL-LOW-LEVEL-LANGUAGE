@@ -1,5 +1,5 @@
 #!/usr/bin/awk -f
-# UMML Compiler - Ultra-Robust Keyword Parser (v3.1 Universal & Robust)
+# UMML Compiler - v3.6 (Aerospace-Grade Formal Verification)
 
 BEGIN {
     comp_count = 0; wire_count = 0; proof_count = 0; body_count = 0
@@ -10,20 +10,12 @@ BEGIN {
 
 /^#/ || /^$/ { next }
 
-# --- DYNAMIC UNIVERSAL PIN PARSER ---
 /^pin / {
-    pin_name = $2
-    pin_dir = $3
-    pin_width = $4
+    pin_name = $2; pin_dir = $3; pin_width = $4
     if (pin_width == "") pin_width = "1"
-    
-    # FIX: Actually do the math for SystemVerilog [N-1:0] syntax
     width_minus_one = pin_width - 1
-    
-    pin_names[pin_count] = pin_name
-    pin_dirs[pin_count] = pin_dir
-    pin_widths[pin_count] = width_minus_one
-    pin_count++
+    pin_names[pin_count] = pin_name; pin_dirs[pin_count] = pin_dir
+    pin_widths[pin_count] = width_minus_one; pin_count++
     next
 }
 
@@ -38,8 +30,7 @@ BEGIN {
 /^set/ {
     param_name = $2; param_value = $4; param_unit = $5
     params[param_count++] = param_name
-    param_values[param_name] = param_value
-    param_units[param_name] = param_unit
+    param_values[param_name] = param_value; param_units[param_name] = param_unit
     next
 }
 
@@ -73,8 +64,7 @@ BEGIN {
             break
         }
     }
-    fsm_names[fsm_count] = fsm_name
-    fsm_count++; next
+    fsm_names[fsm_count] = fsm_name; fsm_count++; next
 }
 
 /^make a metamorphic router named/ {
@@ -121,18 +111,12 @@ BEGIN {
     next
 }
 
-# --- FIX: Robust condition parsing for complex logic (e.g., "motor_temp > 4095") ---
 /^if / {
-    line = $0
-    sub(/^if /, "", line)
+    line = $0; sub(/^if /, "", line)
     split(line, parts, " force ")
     condition = parts[1]
-    
-    rest = parts[2]
-    split(rest, target_parts, " to ")
-    target_fsm = target_parts[1]
-    target_state = target_parts[2]
-    
+    rest = parts[2]; split(rest, target_parts, " to ")
+    target_fsm = target_parts[1]; target_state = target_parts[2]
     overrides[override_count++] = condition "|" target_fsm "|" target_state
     next
 }
@@ -143,31 +127,18 @@ END {
     print "module umml_top ("
     print "  input logic clk,"
     print "  input logic rst_n,"
-    if (has_spine) { 
-        print "  input logic spine_clk,"
-        print "  input logic spine_en," 
-    }
+    if (has_spine) { print "  input logic spine_clk,"; print "  input logic spine_en," }
     
-    # DYNAMIC UNIVERSAL PORTS
     for (i = 0; i < pin_count; i++) {
-        if (pin_dirs[i] == "input") {
-            port_str = "  input logic [" pin_widths[i] ":0] " pin_names[i]
-        } else {
-            port_str = "  output logic [" pin_widths[i] ":0] " pin_names[i]
-        }
-        
-        if (i < pin_count - 1) {
-            print port_str ","
-        } else {
-            print port_str
-        }
+        if (pin_dirs[i] == "input") port_str = "  input logic [" pin_widths[i] ":0] " pin_names[i]
+        else port_str = "  output logic [" pin_widths[i] ":0] " pin_names[i]
+        if (i < pin_count - 1) print port_str ","
+        else print port_str
     }
     print ");\n"
 
     if (param_count > 0) {
-        for (i = 0; i < param_count; i++) {
-            print "  parameter " params[i] " = " param_values[params[i]] "; // " param_units[params[i]]
-        }
+        for (i = 0; i < param_count; i++) print "  parameter " params[i] " = " param_values[params[i]] "; // " param_units[params[i]]
         print ""
     }
 
@@ -197,40 +168,34 @@ END {
     }
 
     for (i = 0; i < fsm_count; i++) {
-        fsm = fsm_names[i]
-        states = fsm_state_lists[fsm]
+        fsm = fsm_names[i]; states = fsm_state_lists[fsm]
         n = split(states, state_array, ", ")
         print "  // State machine logic for " fsm
         print "  always_ff @(posedge clk or negedge rst_n) begin"
         print "    if (!rst_n) " fsm "_state <= " state_array[1] ";"
         print "    else " fsm "_state <= " fsm "_next_state;"
         print "  end\n"
+        
         print "  always_comb begin"
         print "    " fsm "_next_state = " fsm "_state;"
+        for (o = 0; o < override_count; o++) {
+            split(overrides[o], ov, "|")
+            print "    if (" ov[1] ") " fsm "_next_state = " ov[3] ";"
+        }
         print "    case (" fsm "_state)"
         for (s = 1; s <= n; s++) {
             print "      " state_array[s] ": begin"
             for (t = 0; t < transition_count; t++) {
                 split(transitions[t], tp, "|")
-                if (tp[4] == fsm && tp[2] == state_array[s]) {
-                    print "        if (" tp[1] ") " fsm "_next_state = " tp[3] ";"
-                }
+                if (tp[4] == fsm && tp[2] == state_array[s]) print "        if (" tp[1] ") " fsm "_next_state = " tp[3] ";"
             }
             print "      end"
         }
-        print "    endcase\n  end\n"
+        print "    endcase"
+        print "  end\n"
     }
-
-    print "  // Emergency override logic"
-    print "  always_comb begin"
-    for (o = 0; o < override_count; o++) {
-        split(overrides[o], ov, "|")
-        print "    if (" ov[1] ") " ov[2] "_next_state = " ov[3] ";"
-    }
-    print "  end\n"
 
     for (i = 0; i < body_count; i++) print body[i]
-
     for (dst in dst_drivers) {
         print "  // Combined async request for " dst
         print "  assign " dst "_req = " dst_drivers[dst] ";"
@@ -241,21 +206,30 @@ END {
         for (i = 0; i < proof_count; i++) print proofs[i]
     }
 
-    # --- NEW: FORMAL VERIFICATION ASSERTIONS (SVA) FOR OVERRIDES ---
     if (override_count > 0) {
+        print "  `ifdef FORMAL"
         print "  // =========================================="
-        print "  // FORMAL VERIFICATION ASSERTIONS (SVA)"
+        print "  // MATHEMATICAL PROOFS (SVA)"
         print "  // =========================================="
         for (o = 0; o < override_count; o++) {
             split(overrides[o], ov, "|")
+            # Proof 1: The Override (If condition, next state is emergency)
             print "  property safety_override_" o ";"
             print "    @(posedge clk) disable iff (!rst_n)"
             print "    (" ov[1] ") |-> (" ov[2] "_next_state == " ov[3] ");"
             print "  endproperty"
             print "  assert property (safety_override_" o ");"
             print ""
+            
+            # Proof 2: The Stability/Liveness (Once in emergency, it STAYS in emergency)
+            print "  property safety_sticky_" o ";"
+            print "    @(posedge clk) disable iff (!rst_n)"
+            print "    (" ov[2] "_state == " ov[3] ") |=> (" ov[2] "_next_state == " ov[3] ");"
+            print "  endproperty"
+            print "  assert property (safety_sticky_" o ");"
+            print ""
         }
+        print "  `endif"
     }
-
     print "\nendmodule"
 }

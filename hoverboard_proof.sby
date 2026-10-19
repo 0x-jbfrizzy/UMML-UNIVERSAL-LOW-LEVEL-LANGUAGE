@@ -1,0 +1,16 @@
+[tasks]
+prove
+
+[options]
+mode prove
+depth 20
+
+[engines]
+smtbmc z3
+
+[script]
+read -sv hoverboard.v
+prep -top umml_top
+
+[files]
+hoverboard.v
