@@ -1,14 +1,31 @@
 #!/usr/bin/awk -f
-# UMML Compiler - Final Flawless Keyword Parser
-# Translates plain English UMML to 100% synthesizable SystemVerilog
+# UMML Compiler - Ultra-Robust Keyword Parser (v3.1 Universal & Robust)
 
 BEGIN {
     comp_count = 0; wire_count = 0; proof_count = 0; body_count = 0
     has_spine = 0; fsm_count = 0; param_count = 0
     transition_count = 0; override_count = 0
+    pin_count = 0
 }
 
 /^#/ || /^$/ { next }
+
+# --- DYNAMIC UNIVERSAL PIN PARSER ---
+/^pin / {
+    pin_name = $2
+    pin_dir = $3
+    pin_width = $4
+    if (pin_width == "") pin_width = "1"
+    
+    # FIX: Actually do the math for SystemVerilog [N-1:0] syntax
+    width_minus_one = pin_width - 1
+    
+    pin_names[pin_count] = pin_name
+    pin_dirs[pin_count] = pin_dir
+    pin_widths[pin_count] = width_minus_one
+    pin_count++
+    next
+}
 
 /^spine the clock to/ {
     has_spine = 1
@@ -46,8 +63,16 @@ BEGIN {
 
 /^make a state_machine named/ {
     for (i=1; i<=NF; i++) { if ($i == "named") { fsm_name = $(i+1); break } }
-    idx = index($0, "states ")
-    fsm_state_lists[fsm_name] = substr($0, idx + 7)
+    for (i=1; i<=NF; i++) {
+        if ($i == "states") {
+            fsm_state_lists[fsm_name] = ""
+            for (j=i+1; j<=NF; j++) {
+                fsm_state_lists[fsm_name] = fsm_state_lists[fsm_name] $j
+                if (j < NF) fsm_state_lists[fsm_name] = fsm_state_lists[fsm_name] " "
+            }
+            break
+        }
+    }
     fsm_names[fsm_count] = fsm_name
     fsm_count++; next
 }
@@ -78,7 +103,7 @@ BEGIN {
 /^flow the spike from/ {
     for (i=1; i<=NF; i++) {
         if ($i == "from") src = $(i+1)
-        if ($i == "of") dst = $(i+1) # FIX: Grabs the word after "of" (e.g., "thruster_left")
+        if ($i == "of") dst = $(i+1)
     }
     if (dst_drivers[dst] == "") dst_drivers[dst] = src "_spike"
     else dst_drivers[dst] = dst_drivers[dst] " | " src "_spike"
@@ -96,12 +121,18 @@ BEGIN {
     next
 }
 
-/^if/ {
-    condition = $2
-    for (i=1; i<=NF; i++) {
-        if ($i == "force") target_fsm = $(i+1)
-        if ($i == "to") target_state = $(i+1)
-    }
+# --- FIX: Robust condition parsing for complex logic (e.g., "motor_temp > 4095") ---
+/^if / {
+    line = $0
+    sub(/^if /, "", line)
+    split(line, parts, " force ")
+    condition = parts[1]
+    
+    rest = parts[2]
+    split(rest, target_parts, " to ")
+    target_fsm = target_parts[1]
+    target_state = target_parts[2]
+    
     overrides[override_count++] = condition "|" target_fsm "|" target_state
     next
 }
@@ -112,33 +143,41 @@ END {
     print "module umml_top ("
     print "  input logic clk,"
     print "  input logic rst_n,"
-    if (has_spine) { print "  input logic spine_clk,"; print "  input logic spine_en," }
-    print "  input logic [15:0] speed_selector,"
-    print "  input logic right_stick_press,"
-    print "  input logic right_stick_backward_hold,"
-    print "  input logic nav_forward,"
-    print "  input logic nav_backward,"
-    print "  input logic nav_left,"
-    print "  input logic nav_right,"
-    print "  input logic shoe_emergency_button,"
-    print "  output logic [15:0] thruster_left,"
-    print "  output logic [15:0] thruster_right"
-    print ");\n"
+    if (has_spine) { 
+        print "  input logic spine_clk,"
+        print "  input logic spine_en," 
+    }
     
+    # DYNAMIC UNIVERSAL PORTS
+    for (i = 0; i < pin_count; i++) {
+        if (pin_dirs[i] == "input") {
+            port_str = "  input logic [" pin_widths[i] ":0] " pin_names[i]
+        } else {
+            port_str = "  output logic [" pin_widths[i] ":0] " pin_names[i]
+        }
+        
+        if (i < pin_count - 1) {
+            print port_str ","
+        } else {
+            print port_str
+        }
+    }
+    print ");\n"
+
     if (param_count > 0) {
         for (i = 0; i < param_count; i++) {
             print "  parameter " params[i] " = " param_values[params[i]] "; // " param_units[params[i]]
         }
         print ""
     }
-    
+
     for (i = 0; i < fsm_count; i++) {
         fsm = fsm_names[i]
         print "  // State machine: " fsm
         print "  typedef enum logic [2:0] {" fsm_state_lists[fsm] "} " fsm "_state_t;"
         print "  " fsm "_state_t " fsm "_state, " fsm "_next_state;\n"
     }
-    
+
     for (i = 0; i < comp_count; i++) {
         cname = comp_names[i]
         if (comp_types[i] == "memory") {
@@ -156,7 +195,7 @@ END {
             print "  logic " cname "_req, " cname "_ack;\n"
         }
     }
-    
+
     for (i = 0; i < fsm_count; i++) {
         fsm = fsm_names[i]
         states = fsm_state_lists[fsm]
@@ -181,7 +220,7 @@ END {
         }
         print "    endcase\n  end\n"
     }
-    
+
     print "  // Emergency override logic"
     print "  always_comb begin"
     for (o = 0; o < override_count; o++) {
@@ -189,14 +228,14 @@ END {
         print "    if (" ov[1] ") " ov[2] "_next_state = " ov[3] ";"
     }
     print "  end\n"
-    
+
     for (i = 0; i < body_count; i++) print body[i]
-    
+
     for (dst in dst_drivers) {
         print "  // Combined async request for " dst
         print "  assign " dst "_req = " dst_drivers[dst] ";"
     }
-    
+
     if (proof_count > 0) {
         print "\n  // Formal verification assertions"
         for (i = 0; i < proof_count; i++) print proofs[i]
