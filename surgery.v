@@ -37,5 +37,20 @@ module umml_top (
     if (tissue_resistance > 3000) surgical_arm_next_state = RETRACTING;
   end
 
+  // ==========================================
+  // FORMAL VERIFICATION ASSERTIONS (SVA)
+  // ==========================================
+  property safety_override_0;
+    @(posedge clk) disable iff (!rst_n)
+    (force_feedback > 4095) |-> (surgical_arm_next_state == HALT);
+  endproperty
+  assert property (safety_override_0);
+
+  property safety_override_1;
+    @(posedge clk) disable iff (!rst_n)
+    (tissue_resistance > 3000) |-> (surgical_arm_next_state == RETRACTING);
+  endproperty
+  assert property (safety_override_1);
+
 
 endmodule

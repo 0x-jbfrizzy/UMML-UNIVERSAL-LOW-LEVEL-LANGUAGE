@@ -240,5 +240,22 @@ END {
         print "\n  // Formal verification assertions"
         for (i = 0; i < proof_count; i++) print proofs[i]
     }
+
+    # --- NEW: FORMAL VERIFICATION ASSERTIONS (SVA) FOR OVERRIDES ---
+    if (override_count > 0) {
+        print "  // =========================================="
+        print "  // FORMAL VERIFICATION ASSERTIONS (SVA)"
+        print "  // =========================================="
+        for (o = 0; o < override_count; o++) {
+            split(overrides[o], ov, "|")
+            print "  property safety_override_" o ";"
+            print "    @(posedge clk) disable iff (!rst_n)"
+            print "    (" ov[1] ") |-> (" ov[2] "_next_state == " ov[3] ");"
+            print "  endproperty"
+            print "  assert property (safety_override_" o ");"
+            print ""
+        }
+    }
+
     print "\nendmodule"
 }
