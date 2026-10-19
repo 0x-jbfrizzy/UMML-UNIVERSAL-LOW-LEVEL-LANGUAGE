@@ -1,15 +1,39 @@
 #!/bin/sh
-# UMML Native Compiler - Pure POSIX Shell
-# Zero abstractions. Direct text-to-silicon translation.
+# UMML Compiler - Universal Low-Level Language
+# Translates plain English UMML to synthesizable SystemVerilog
 
-if [ -z "$1" ]; then
-    echo "Usage: ./umml_compile <source.umml>"
+if [ $# -ne 1 ]; then
+    echo "Usage: $0 <input.umml>"
+    echo "Example: $0 hover_shoe.umml"
     exit 1
 fi
 
-INPUT_FILE=$1
-OUTPUT_FILE="${1%.umml}.v"
+INPUT_FILE="$1"
+OUTPUT_FILE="${INPUT_FILE%.umml}.v"
 
-awk -f compiler.awk "$INPUT_FILE" > "$OUTPUT_FILE"
+if [ ! -f "$INPUT_FILE" ]; then
+    echo "Error: Input file '$INPUT_FILE' not found"
+    exit 1
+fi
 
-echo "Compiled $INPUT_FILE -> $OUTPUT_FILE"
+echo "Compiling $INPUT_FILE -> $OUTPUT_FILE"
+
+./compiler.awk "$INPUT_FILE" > "$OUTPUT_FILE"
+
+if [ $? -eq 0 ]; then
+    echo "Compilation successful: $OUTPUT_FILE"
+    echo ""
+    echo "Generated Verilog includes:"
+    echo "  - State machines with formal verification"
+    echo "  - Metamorphic routing with XOR-based obfuscation"
+    echo "  - Async handshakes with spike/ack protocol"
+    echo "  - Emergency override logic"
+    echo ""
+    echo "Next steps:"
+    echo "  1. Review $OUTPUT_FILE"
+    echo "  2. Simulate with: iverilog -o sim $OUTPUT_FILE testbench.sv"
+    echo "  3. Synthesize with: ./build_fpga.sh $OUTPUT_FILE"
+else
+    echo "Error: Compilation failed"
+    exit 1
+fi

@@ -11,23 +11,23 @@ module umml_top (
 );
 
   // State machine: flight_state
-  typedef enum logic [2:0] {GROUND, SPIN_UP, HOVER, EMERGENCY_DESCENT} flight_state_state_t;
-  flight_state_state_t flight_state_state, flight_state_next_state;
+  typedef enum logic [2:0] {GROUND, SPIN_UP, HOVER, EMERGENCY_DESCENT} flight_state_t;
+  flight_state_t flight_state, flight_state_next;
 
   // State machine logic for flight_state
   always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n) flight_state_state <= GROUND;
-    else flight_state_state <= flight_state_next_state;
+    if (!rst_n) flight_state <= GROUND;
+    else flight_state <= flight_state_next;
   end
 
   always_comb begin
-    flight_state_next_state = flight_state_state;
-    if (emergency_button == 0) flight_state_next_state = EMERGENCY_DESCENT;
-    if (skirt_pressure < 1000) flight_state_next_state = EMERGENCY_DESCENT;
-    if (battery_current > 4000) flight_state_next_state = EMERGENCY_DESCENT;
-    if (battery_temp > 3500) flight_state_next_state = EMERGENCY_DESCENT;
-    if (blower_rpm < 500) flight_state_next_state = EMERGENCY_DESCENT;
-    case (flight_state_state)
+    flight_state_next = flight_state;
+    if (emergency_button == 0) flight_state_next = EMERGENCY_DESCENT;
+    if (skirt_pressure < 1000) flight_state_next = EMERGENCY_DESCENT;
+    if (battery_current > 4000) flight_state_next = EMERGENCY_DESCENT;
+    if (battery_temp > 3500) flight_state_next = EMERGENCY_DESCENT;
+    if (blower_rpm < 500) flight_state_next = EMERGENCY_DESCENT;
+    case (flight_state)
       GROUND: begin
       end
       SPIN_UP: begin
@@ -45,61 +45,61 @@ module umml_top (
   // ==========================================
   property safety_override_0;
     @(posedge clk) disable iff (!rst_n)
-    (emergency_button == 0) |-> (flight_state_next_state == EMERGENCY_DESCENT);
+    (emergency_button == 0) |-> (flight_state_next == EMERGENCY_DESCENT);
   endproperty
   assert property (safety_override_0);
 
   property safety_sticky_0;
     @(posedge clk) disable iff (!rst_n)
-    (flight_state_state == EMERGENCY_DESCENT) |=> (flight_state_next_state == EMERGENCY_DESCENT);
+    (flight_state == EMERGENCY_DESCENT) |=> (flight_state_next == EMERGENCY_DESCENT);
   endproperty
   assert property (safety_sticky_0);
 
   property safety_override_1;
     @(posedge clk) disable iff (!rst_n)
-    (skirt_pressure < 1000) |-> (flight_state_next_state == EMERGENCY_DESCENT);
+    (skirt_pressure < 1000) |-> (flight_state_next == EMERGENCY_DESCENT);
   endproperty
   assert property (safety_override_1);
 
   property safety_sticky_1;
     @(posedge clk) disable iff (!rst_n)
-    (flight_state_state == EMERGENCY_DESCENT) |=> (flight_state_next_state == EMERGENCY_DESCENT);
+    (flight_state == EMERGENCY_DESCENT) |=> (flight_state_next == EMERGENCY_DESCENT);
   endproperty
   assert property (safety_sticky_1);
 
   property safety_override_2;
     @(posedge clk) disable iff (!rst_n)
-    (battery_current > 4000) |-> (flight_state_next_state == EMERGENCY_DESCENT);
+    (battery_current > 4000) |-> (flight_state_next == EMERGENCY_DESCENT);
   endproperty
   assert property (safety_override_2);
 
   property safety_sticky_2;
     @(posedge clk) disable iff (!rst_n)
-    (flight_state_state == EMERGENCY_DESCENT) |=> (flight_state_next_state == EMERGENCY_DESCENT);
+    (flight_state == EMERGENCY_DESCENT) |=> (flight_state_next == EMERGENCY_DESCENT);
   endproperty
   assert property (safety_sticky_2);
 
   property safety_override_3;
     @(posedge clk) disable iff (!rst_n)
-    (battery_temp > 3500) |-> (flight_state_next_state == EMERGENCY_DESCENT);
+    (battery_temp > 3500) |-> (flight_state_next == EMERGENCY_DESCENT);
   endproperty
   assert property (safety_override_3);
 
   property safety_sticky_3;
     @(posedge clk) disable iff (!rst_n)
-    (flight_state_state == EMERGENCY_DESCENT) |=> (flight_state_next_state == EMERGENCY_DESCENT);
+    (flight_state == EMERGENCY_DESCENT) |=> (flight_state_next == EMERGENCY_DESCENT);
   endproperty
   assert property (safety_sticky_3);
 
   property safety_override_4;
     @(posedge clk) disable iff (!rst_n)
-    (blower_rpm < 500) |-> (flight_state_next_state == EMERGENCY_DESCENT);
+    (blower_rpm < 500) |-> (flight_state_next == EMERGENCY_DESCENT);
   endproperty
   assert property (safety_override_4);
 
   property safety_sticky_4;
     @(posedge clk) disable iff (!rst_n)
-    (flight_state_state == EMERGENCY_DESCENT) |=> (flight_state_next_state == EMERGENCY_DESCENT);
+    (flight_state == EMERGENCY_DESCENT) |=> (flight_state_next == EMERGENCY_DESCENT);
   endproperty
   assert property (safety_sticky_4);
 

@@ -1,5 +1,5 @@
 #!/usr/bin/awk -f
-# UMML Compiler - v3.6 (Aerospace-Grade Formal Verification)
+# UMML Compiler - v3.7 (Aerospace-Grade, Clean Variable Naming)
 
 BEGIN {
     comp_count = 0; wire_count = 0; proof_count = 0; body_count = 0
@@ -145,8 +145,9 @@ END {
     for (i = 0; i < fsm_count; i++) {
         fsm = fsm_names[i]
         print "  // State machine: " fsm
-        print "  typedef enum logic [2:0] {" fsm_state_lists[fsm] "} " fsm "_state_t;"
-        print "  " fsm "_state_t " fsm "_state, " fsm "_next_state;\n"
+        print "  typedef enum logic [2:0] {" fsm_state_lists[fsm] "} " fsm "_t;"
+        # FIX: Use fsm and fsm_next to avoid double "_state" (e.g., flight_state and flight_state_next)
+        print "  " fsm "_t " fsm ", " fsm "_next;\n"
     }
 
     for (i = 0; i < comp_count; i++) {
@@ -172,22 +173,24 @@ END {
         n = split(states, state_array, ", ")
         print "  // State machine logic for " fsm
         print "  always_ff @(posedge clk or negedge rst_n) begin"
-        print "    if (!rst_n) " fsm "_state <= " state_array[1] ";"
-        print "    else " fsm "_state <= " fsm "_next_state;"
+        print "    if (!rst_n) " fsm " <= " state_array[1] ";"
+        print "    else " fsm " <= " fsm "_next;"
         print "  end\n"
         
         print "  always_comb begin"
-        print "    " fsm "_next_state = " fsm "_state;"
+        print "    " fsm "_next = " fsm ";"
         for (o = 0; o < override_count; o++) {
             split(overrides[o], ov, "|")
-            print "    if (" ov[1] ") " fsm "_next_state = " ov[3] ";"
+            if (ov[2] == fsm) {
+                print "    if (" ov[1] ") " fsm "_next = " ov[3] ";"
+            }
         }
-        print "    case (" fsm "_state)"
+        print "    case (" fsm ")"
         for (s = 1; s <= n; s++) {
             print "      " state_array[s] ": begin"
             for (t = 0; t < transition_count; t++) {
                 split(transitions[t], tp, "|")
-                if (tp[4] == fsm && tp[2] == state_array[s]) print "        if (" tp[1] ") " fsm "_next_state = " tp[3] ";"
+                if (tp[4] == fsm && tp[2] == state_array[s]) print "        if (" tp[1] ") " fsm "_next = " tp[3] ";"
             }
             print "      end"
         }
@@ -213,18 +216,18 @@ END {
         print "  // =========================================="
         for (o = 0; o < override_count; o++) {
             split(overrides[o], ov, "|")
-            # Proof 1: The Override (If condition, next state is emergency)
+            # Proof 1: The Override
             print "  property safety_override_" o ";"
             print "    @(posedge clk) disable iff (!rst_n)"
-            print "    (" ov[1] ") |-> (" ov[2] "_next_state == " ov[3] ");"
+            print "    (" ov[1] ") |-> (" ov[2] "_next == " ov[3] ");"
             print "  endproperty"
             print "  assert property (safety_override_" o ");"
             print ""
             
-            # Proof 2: The Stability/Liveness (Once in emergency, it STAYS in emergency)
+            # Proof 2: The Stability/Liveness (Sticky)
             print "  property safety_sticky_" o ";"
             print "    @(posedge clk) disable iff (!rst_n)"
-            print "    (" ov[2] "_state == " ov[3] ") |=> (" ov[2] "_next_state == " ov[3] ");"
+            print "    (" ov[2] " == " ov[3] ") |=> (" ov[2] "_next == " ov[3] ");"
             print "  endproperty"
             print "  assert property (safety_sticky_" o ");"
             print ""

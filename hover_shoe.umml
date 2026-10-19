@@ -1,0 +1,5 @@
+make a state_machine named vertical_mode with states ascend, hover, descend
+if tether_severed force vertical_mode to descend
+if empty_battery force vertical_mode to descend 
+
+start machine

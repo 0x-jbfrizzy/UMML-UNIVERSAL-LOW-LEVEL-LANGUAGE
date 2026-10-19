@@ -1,0 +1,14 @@
+spine the clock to grip_strength_sensor for init
+make a memory named battery_level with size 16
+make a neuron named open_hand_button with threshold 1 and leak 0
+nake a neuron named viberation_sensor with threshold 3 and leak 0
+make a metamorphic router named secure_bus with key 8'hA1
+flow the spike from viberation_sensor into the read of stabilize_grip
+make a neuron named motor_lock with threshold 1 and leak 0         
+morph the spike from open_hand_button through  secure bus to  motor_lock with key 8'hA1
+make a state_machine named grip_state with states open, closing, locked
+on press close_hand_btn transition from open to closing in grip_state
+
+start the system                                                        
+                                                                                                    
+                                      

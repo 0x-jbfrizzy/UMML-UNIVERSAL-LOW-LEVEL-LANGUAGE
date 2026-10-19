@@ -1,4 +1,9 @@
-`timescale 1ns/1ps
+~/UMML-UNIVERSAL-LOW-LEVEL-LANGUAGE $ iverilog -g2012 -o surgery_sim surgery.v surgery_tb.sv
+~/UMML-UNIVERSAL-LOW-LEVEL-LANGUAGE $ vvp surgery_sim
+Time: 120000 ns | SIMULATING EXCESSIVE SURGICAL FORCE (> 4095)!
+SUCCESS: Surgery robot hardware interlock forced HALT state instantly!
+surgery_tb.sv:33: $finish called at 140000 (1ps)
+~/UMML-UNIVERSAL-LOW-LEVEL-LANGUAGE $`timescale 1ns/1ps
 
 module surgery_tb;
     reg clk, rst_n;

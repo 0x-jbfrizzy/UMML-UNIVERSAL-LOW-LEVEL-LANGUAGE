@@ -1,0 +1,12 @@
+# Universal Robot Arm Safety Controller
+pin collision_sensor input 1
+pin motor_temp input 16
+pin emergency_brake output 1
+pin joint_velocity output 16
+
+make a state_machine named arm_control with states IDLE, MOVING, FAULT
+
+if collision_sensor force arm_control to FAULT
+if motor_temp > 4095 force arm_control to FAULT
+
+start machine
